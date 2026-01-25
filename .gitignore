@@ -44,7 +44,9 @@ compartilhado/
 *.csv
 *.txt
 *.md
+!SETUP_WINDOWS.md
 *.png
+!templates_matching/*.png
 *.jpg
 *.jpeg
 *.lnk
