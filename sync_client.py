@@ -15,16 +15,42 @@ import json
 from datetime import datetime
 from typing import Optional, Dict
 
-# ========== CONFIGURAR ESTE IP ==========
-LINUX_SERVER_IP = "192.168.0.200"
-LINUX_SERVER_PORT = 5555
-# ========================================
+# ========== CONFIGURAÇÃO VIA ARQUIVO ==========
+# Crie o arquivo sync_config.json com:
+# {"server_ip": "192.168.0.200", "server_port": 5555, "enabled": true}
+# Se o arquivo não existir, sync fica DESABILITADO
+# ===============================================
 
-BASE_URL = f"http://{LINUX_SERVER_IP}:{LINUX_SERVER_PORT}"
+import os
+
+SYNC_CONFIG_FILE = os.path.join(os.path.dirname(__file__), "sync_config.json")
+SYNC_ENABLED = False
+LINUX_SERVER_IP = ""
+LINUX_SERVER_PORT = 5555
+
+# Carregar config se existir
+if os.path.exists(SYNC_CONFIG_FILE):
+    try:
+        with open(SYNC_CONFIG_FILE, 'r') as f:
+            _config = json.load(f)
+            LINUX_SERVER_IP = _config.get('server_ip', '')
+            LINUX_SERVER_PORT = _config.get('server_port', 5555)
+            SYNC_ENABLED = _config.get('enabled', False) and LINUX_SERVER_IP
+            if SYNC_ENABLED:
+                print(f"[SYNC] Habilitado - servidor: {LINUX_SERVER_IP}:{LINUX_SERVER_PORT}")
+    except Exception as e:
+        print(f"[SYNC] Erro ao ler config: {e}")
+        SYNC_ENABLED = False
+else:
+    print("[SYNC] Desabilitado - sync_config.json não encontrado")
+
+BASE_URL = f"http://{LINUX_SERVER_IP}:{LINUX_SERVER_PORT}" if SYNC_ENABLED else ""
 
 
 def ping_server() -> bool:
     """Verifica se o servidor Linux está online"""
+    if not SYNC_ENABLED:
+        return False
     try:
         req = urllib.request.urlopen(f"{BASE_URL}/ping", timeout=5)
         data = json.loads(req.read().decode())
