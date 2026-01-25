@@ -1,0 +1,84 @@
+{
+  "resultado_padr\u00e3o": {
+    "banca_final": 87289.2485391053,
+    "lucro_realizado": 69984.51769750817,
+    "total": 157273.76623661348,
+    "ganho_pct": 15627.376623661348,
+    "wins": 660,
+    "losses": 544,
+    "busts": 0,
+    "gatilhos": 660
+  },
+  "resultado_nova": {
+    "banca_final": 205374.82091271138,
+    "lucro_realizado": 145169.43929587095,
+    "total": 350544.26020858233,
+    "ganho_pct": 34954.426020858235,
+    "wins": 660,
+    "losses": 555,
+    "busts": 0,
+    "gatilhos": 660
+  },
+  "periodos_criticos": {
+    "periodo_1": {
+      "rodadas": [
+        12491,
+        17020
+      ],
+      "duracao_rodadas": 4530,
+      "duracao_dias": 1.2583333333333333,
+      "padr\u00e3o": {
+        "banca_inicio": 1831.1087880975952,
+        "banca_fim": 3226.0422893266473,
+        "banca_minima": 1489.7396887772952,
+        "drawdown_pct": -18.64275358947737,
+        "recuperacao_pct": 116.5507379329085,
+        "ganho_liquido": 1394.9335012290521
+      },
+      "nova": {
+        "banca_inicio": 2858.3834852858445,
+        "banca_fim": 7545.261983284839,
+        "banca_minima": 2325.5020954816882,
+        "drawdown_pct": -18.642753589477408,
+        "recuperacao_pct": 224.45732893317242,
+        "ganho_liquido": 4686.878497998994
+      },
+      "comparacao": {
+        "drawdown_diferenca": -3.907985046680551e-14,
+        "recuperacao_diferenca": 107.90659100026392,
+        "ganho_diferenca": 3291.944996769942
+      }
+    },
+    "periodo_2": {
+      "rodadas": [
+        39986,
+        41605
+      ],
+      "duracao_rodadas": 1620,
+      "duracao_dias": 0.45,
+      "padr\u00e3o": {
+        "banca_inicio": 28406.16408399587,
+        "banca_fim": 33775.07224782524,
+        "banca_minima": 27322.998056422886,
+        "drawdown_pct": -3.813137262638161,
+        "recuperacao_pct": 23.614078433408412,
+        "ganho_liquido": 5368.908163829372
+      },
+      "nova": {
+        "banca_inicio": 46386.96832710755,
+        "banca_fim": 55154.339106572144,
+        "banca_minima": 46362.96048375321,
+        "drawdown_pct": -0.05175557752565796,
+        "recuperacao_pct": 18.962073454950453,
+        "ganho_liquido": 8767.370779464596
+      },
+      "comparacao": {
+        "drawdown_diferenca": 3.7613816851125033,
+        "recuperacao_diferenca": -4.65200497845796,
+        "ganho_diferenca": 3398.462615635224
+      }
+    }
+  },
+  "diferenca_total": 193270.49397196886,
+  "pct_diferenca": 122.8879415790167
+}

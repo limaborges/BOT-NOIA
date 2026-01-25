@@ -1,0 +1,58 @@
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# State files (cada máquina tem o seu)
+session_state.json
+reserva_state.json
+dual_account_state.json
+conservadora_remote_state.json
+aceleracao_state.json
+
+# Logs
+*.log
+logs/
+
+# Debug output
+ocr_debug_output/
+templates_debug/
+
+# Database (local)
+database/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backups locais
+backups/
+backup_*/
+*_backup_*.py
+compartilhado/
+
+# Data files (muito grandes)
+*.csv
+*.txt
+*.md
+*.png
+*.jpg
+*.jpeg
+*.lnk
+*.swp
+
+# Config específico de máquina
+telegram_config.json
+
+# Arquivos Windows
+*.bat
+*.exe

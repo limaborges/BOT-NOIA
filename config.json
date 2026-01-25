@@ -1,0 +1,890 @@
+{
+    "jogadores": [
+        {
+            "id": "jogador1",
+            "banca_inicial": 2000.49,
+            "banka": 2000.49,
+            "email": "user1crash@gmail.com",
+            "cpf": "123.456.789-00",
+            "senha": "Crash2025!"
+        }
+    ],
+    "tempo_horas": 5,
+    "max_rodadas": 1800,
+    "meta_lucro_total": 155220,
+    "horario_inicio": "08:00",
+    "telegram": {
+        "token": "8003112238:AAHNoTq73W6Ssm-RQEwpzUStJHD4kId-eyU",
+        "chat_id": "7460639576",
+        "notification_thresholds": [
+            300.0,
+            381.04
+        ]
+    },
+    "bet_settings": {
+        "mouse_speed": 0.1,
+        "click_delay": 0.05,
+        "typing_speed": 0.01,
+        "execution_timeout": 3
+    },
+    "multiplier_region": {
+        "x": 738,
+        "y": 360,
+        "width": 172,
+        "height": 45
+    },
+    "profiles": {
+        "Monitor LG": {
+            "multiplier_area": {
+                "x": 520,
+                "y": 393,
+                "width": 167,
+                "height": 55
+            },
+            "balance_area": {
+                "x": 767,
+                "y": 134,
+                "width": 106,
+                "height": 27
+            },
+            "bet_area": {
+                "x": 504,
+                "y": 449,
+                "width": 211,
+                "height": 58
+            },
+            "bet_value_click_1": {
+                "x": 408,
+                "y": 835
+            },
+            "target_click_1": {
+                "x": 601,
+                "y": 841
+            },
+            "bet_value_click_2": {
+                "x": 410,
+                "y": 986
+            },
+            "target_click_2": {
+                "x": 601,
+                "y": 988
+            },
+            "bet_value_area_1": null,
+            "target_area_1": null,
+            "bet_value_area_2": null,
+            "target_area_2": null,
+            "bet_button_area_1": null,
+            "bet_button_area_2": null
+        },
+        "Monitor Laptop": {
+            "multiplier_area": {
+                "x": 827,
+                "y": 390,
+                "width": 198,
+                "height": 58
+            },
+            "balance_area": {
+                "x": 1455,
+                "y": 136,
+                "width": 69,
+                "height": 24
+            },
+            "bet_area": {
+                "x": 821,
+                "y": 451,
+                "width": 216,
+                "height": 59
+            },
+            "bet_value_click_1": {
+                "x": 726,
+                "y": 835
+            },
+            "target_click_1": {
+                "x": 915,
+                "y": 841
+            },
+            "bet_value_click_2": {
+                "x": 728,
+                "y": 982
+            },
+            "target_click_2": {
+                "x": 912,
+                "y": 989
+            },
+            "bet_value_area_1": {
+                "x": 693,
+                "y": 826,
+                "width": 65,
+                "height": 22
+            },
+            "target_area_1": {
+                "x": 884,
+                "y": 826,
+                "width": 70,
+                "height": 24
+            },
+            "bet_value_area_2": {
+                "x": 696,
+                "y": 975,
+                "width": 57,
+                "height": 19
+            },
+            "target_area_2": {
+                "x": 885,
+                "y": 972,
+                "width": 68,
+                "height": 27
+            },
+            "bet_button_area_1": {
+                "x": 1033,
+                "y": 814,
+                "width": 162,
+                "height": 47
+            },
+            "bet_button_area_2": {
+                "x": 1035,
+                "y": 960,
+                "width": 156,
+                "height": 51
+            }
+        },
+        "Monitor Trabalho": {
+            "multiplier_area": {
+                "x": 520,
+                "y": 393,
+                "width": 167,
+                "height": 55
+            },
+            "balance_area": {
+                "x": 767,
+                "y": 134,
+                "width": 106,
+                "height": 27
+            },
+            "bet_area": {
+                "x": 504,
+                "y": 449,
+                "width": 211,
+                "height": 58
+            },
+            "bet_value_click_1": {
+                "x": 408,
+                "y": 835
+            },
+            "target_click_1": {
+                "x": 601,
+                "y": 841
+            },
+            "bet_value_click_2": {
+                "x": 410,
+                "y": 986
+            },
+            "target_click_2": {
+                "x": 601,
+                "y": 988
+            },
+            "bet_value_area_1": null,
+            "target_area_1": null,
+            "bet_value_area_2": null,
+            "target_area_2": null,
+            "bet_button_area_1": null,
+            "bet_button_area_2": null
+        },
+        "Gago": {
+            "multiplier_area": {
+                "x": 738,
+                "y": 360,
+                "width": 172,
+                "height": 45
+            },
+            "balance_area": {
+                "x": 1487,
+                "y": 120,
+                "width": 66,
+                "height": 28
+            },
+            "bet_area": {
+                "x": 735,
+                "y": 411,
+                "width": 199,
+                "height": 55
+            },
+            "bet_value_click_1": {
+                "x": 641,
+                "y": 774
+            },
+            "target_click_1": {
+                "x": 840,
+                "y": 772
+            },
+            "bet_value_click_2": {
+                "x": 645,
+                "y": 910
+            },
+            "target_click_2": {
+                "x": 823,
+                "y": 911
+            },
+            "bet_value_area_1": {
+                "x": 616,
+                "y": 755,
+                "width": 58,
+                "height": 28
+            },
+            "target_area_1": {
+                "x": 786,
+                "y": 761,
+                "width": 70,
+                "height": 22
+            },
+            "bet_value_area_2": {
+                "x": 624,
+                "y": 899,
+                "width": 49,
+                "height": 23
+            },
+            "target_area_2": {
+                "x": 792,
+                "y": 898,
+                "width": 65,
+                "height": 26
+            },
+            "bet_button_area_1": {
+                "x": 935,
+                "y": 755,
+                "width": 137,
+                "height": 39
+            },
+            "bet_button_area_2": {
+                "x": 934,
+                "y": 892,
+                "width": 134,
+                "height": 35
+            }
+        },
+        "NOtebruk do gago": {
+            "multiplier_area": {
+                "x": 736,
+                "y": 361,
+                "width": 170,
+                "height": 46
+            },
+            "balance_area": {
+                "x": 1487,
+                "y": 124,
+                "width": 65,
+                "height": 23
+            },
+            "bet_area": {
+                "x": 738,
+                "y": 411,
+                "width": 192,
+                "height": 58
+            },
+            "bet_value_click_1": {
+                "x": 649,
+                "y": 772
+            },
+            "target_click_1": {
+                "x": 825,
+                "y": 773
+            },
+            "bet_value_click_2": {
+                "x": 646,
+                "y": 909
+            },
+            "target_click_2": {
+                "x": 820,
+                "y": 909
+            },
+            "bet_value_area_1": {
+                "x": 620,
+                "y": 762,
+                "width": 52,
+                "height": 20
+            },
+            "target_area_1": {
+                "x": 788,
+                "y": 764,
+                "width": 67,
+                "height": 17
+            },
+            "bet_value_area_2": {
+                "x": 627,
+                "y": 901,
+                "width": 40,
+                "height": 18
+            },
+            "target_area_2": {
+                "x": 798,
+                "y": 900,
+                "width": 53,
+                "height": 18
+            },
+            "bet_button_area_1": {
+                "x": 942,
+                "y": 757,
+                "width": 128,
+                "height": 35
+            },
+            "bet_button_area_2": {
+                "x": 943,
+                "y": 897,
+                "width": 128,
+                "height": 26
+            }
+        },
+        "Not Bet unico NEW": {
+            "multiplier_area": {
+                "x": 820,
+                "y": 414,
+                "width": 186,
+                "height": 57
+            },
+            "balance_area": {
+                "x": 1396,
+                "y": 126,
+                "width": 83,
+                "height": 29
+            },
+            "bet_area": {
+                "x": 810,
+                "y": 474,
+                "width": 249,
+                "height": 63
+            },
+            "bet_value_click_1": {
+                "x": 707,
+                "y": 907
+            },
+            "target_click_1": {
+                "x": 920,
+                "y": 907
+            },
+            "bet_value_click_2": {
+                "x": 696,
+                "y": 978
+            },
+            "target_click_2": {
+                "x": 926,
+                "y": 978
+            },
+            "bet_value_area_1": {
+                "x": 667,
+                "y": 890,
+                "width": 65,
+                "height": 28
+            },
+            "target_area_1": {
+                "x": 871,
+                "y": 895,
+                "width": 80,
+                "height": 22
+            },
+            "bet_value_area_2": {
+                "x": 655,
+                "y": 971,
+                "width": 68,
+                "height": 10
+            },
+            "target_area_2": {
+                "x": 864,
+                "y": 973,
+                "width": 76,
+                "height": 10
+            },
+            "bet_button_area_1": {
+                "x": 1045,
+                "y": 884,
+                "width": 172,
+                "height": 44
+            },
+            "bet_button_area_2": {
+                "x": 1052,
+                "y": 971,
+                "width": 124,
+                "height": 14
+            }
+        },
+        "LAPTOP 110%": {
+            "multiplier_area": {
+                "x": 800,
+                "y": 449,
+                "width": 227,
+                "height": 82
+            },
+            "balance_area": {
+                "x": 1347,
+                "y": 140,
+                "width": 91,
+                "height": 30
+            },
+            "bet_area": {
+                "x": 794,
+                "y": 516,
+                "width": 267,
+                "height": 85
+            },
+            "bet_value_click_1": {
+                "x": 654,
+                "y": 997
+            },
+            "target_click_1": {
+                "x": 944,
+                "y": 1000
+            },
+            "bet_value_click_2": {
+                "x": 674,
+                "y": 1051
+            },
+            "target_click_2": {
+                "x": 899,
+                "y": 1053
+            },
+            "bet_value_area_1": {
+                "x": 637,
+                "y": 983,
+                "width": 68,
+                "height": 29
+            },
+            "target_area_1": {
+                "x": 874,
+                "y": 985,
+                "width": 67,
+                "height": 24
+            },
+            "bet_value_area_2": {
+                "x": 1051,
+                "y": 1041,
+                "width": 196,
+                "height": 31
+            },
+            "target_area_2": {
+                "x": 849,
+                "y": 1043,
+                "width": 106,
+                "height": 35
+            },
+            "bet_button_area_1": {
+                "x": 1054,
+                "y": 970,
+                "width": 177,
+                "height": 49
+            },
+            "bet_button_area_2": {
+                "x": 1055,
+                "y": 1041,
+                "width": 172,
+                "height": 25
+            }
+        },
+        "LG FULL": {
+            "multiplier_area": {
+                "x": 1174,
+                "y": 394,
+                "width": 135,
+                "height": 51
+            },
+            "balance_area": {
+                "x": 2097,
+                "y": 142,
+                "width": 64,
+                "height": 17
+            },
+            "bet_area": {
+                "x": 1149,
+                "y": 450,
+                "width": 206,
+                "height": 56
+            },
+            "bet_value_area_1": {
+                "x": 1014,
+                "y": 823,
+                "width": 64,
+                "height": 21
+            },
+            "bet_value_click_1": {
+                "x": 1046,
+                "y": 833
+            },
+            "target_area_1": {
+                "x": 1203,
+                "y": 826,
+                "width": 70,
+                "height": 21
+            },
+            "target_click_1": {
+                "x": 1238,
+                "y": 836
+            },
+            "bet_button_area_1": {
+                "x": 1359,
+                "y": 813,
+                "width": 150,
+                "height": 48
+            },
+            "bet_value_area_2": null,
+            "bet_value_click_2": null,
+            "target_area_2": null,
+            "target_click_2": null,
+            "bet_button_area_2": null
+        },
+        "LG FULL 100% ZOOM": {
+            "multiplier_area": {
+                "x": 1136,
+                "y": 422,
+                "width": 188,
+                "height": 57
+            },
+            "balance_area": {
+                "x": 2049,
+                "y": 144,
+                "width": 65,
+                "height": 17
+            },
+            "bet_area": {
+                "x": 1132,
+                "y": 489,
+                "width": 226,
+                "height": 60
+            },
+            "bet_value_click_1": {
+                "x": 1008,
+                "y": 911
+            },
+            "target_click_1": {
+                "x": 1202,
+                "y": 915
+            },
+            "bet_button_area_1": {
+                "x": 1365,
+                "y": 891,
+                "width": 171,
+                "height": 50
+            },
+            "bet_value_click_2": null,
+            "target_click_2": null,
+            "bet_button_area_2": null,
+            "bet_value_area_1": {
+                "x": 983,
+                "y": 903,
+                "width": 72,
+                "height": 25
+            },
+            "target_area_1": {
+                "x": 1192,
+                "y": 911,
+                "width": 78,
+                "height": 11
+            },
+            "bet_value_area_2": null,
+            "target_area_2": null
+        },
+        "TELA NOTEBOOK LENOVO 100% ZOOM": {
+            "multiplier_area": {
+                "x": 830,
+                "y": 421,
+                "width": 160,
+                "height": 61
+            },
+            "balance_area": {
+                "x": 1406,
+                "y": 143,
+                "width": 68,
+                "height": 18
+            },
+            "bet_area": {
+                "x": 810,
+                "y": 484,
+                "width": 233,
+                "height": 69
+            },
+            "bet_value_area_1": {
+                "x": 659,
+                "y": 904,
+                "width": 73,
+                "height": 22
+            },
+            "target_area_1": {
+                "x": 870,
+                "y": 905,
+                "width": 79,
+                "height": 23
+            },
+            "bet_button_area_1": {
+                "x": 1046,
+                "y": 893,
+                "width": 172,
+                "height": 50
+            },
+            "bet_value_area_2": null,
+            "target_area_2": null,
+            "bet_button_area_2": null
+        },
+        "LG FULL 90% 2 SLOTS": {
+            "multiplier_area": {
+                "x": 1156,
+                "y": 394,
+                "width": 174,
+                "height": 48
+            },
+            "balance_area": {
+                "x": 2099,
+                "y": 140,
+                "width": 59,
+                "height": 18
+            },
+            "bet_area": {
+                "x": 1150,
+                "y": 449,
+                "width": 202,
+                "height": 60
+            },
+            "bet_value_area_1": {
+                "x": 1010,
+                "y": 824,
+                "width": 69,
+                "height": 25
+            },
+            "target_area_1": {
+                "x": 1199,
+                "y": 831,
+                "width": 72,
+                "height": 12
+            },
+            "bet_button_area_1": {
+                "x": 1360,
+                "y": 820,
+                "width": 144,
+                "height": 36
+            },
+            "bet_value_area_2": {
+                "x": 1016,
+                "y": 976,
+                "width": 55,
+                "height": 17
+            },
+            "target_area_2": {
+                "x": 1197,
+                "y": 978,
+                "width": 79,
+                "height": 17
+            },
+            "bet_button_area_2": {
+                "x": 1360,
+                "y": 966,
+                "width": 140,
+                "height": 32
+            }
+        },
+        "LENOVO 90% 2 SLOTS": {
+            "multiplier_area": {
+                "x": 837,
+                "y": 393,
+                "width": 150,
+                "height": 55
+            },
+            "balance_area": {
+                "x": 1449,
+                "y": 141,
+                "width": 69,
+                "height": 17
+            },
+            "bet_area": {
+                "x": 825,
+                "y": 450,
+                "width": 207,
+                "height": 63
+            },
+            "bet_value_area_1": {
+                "x": 692,
+                "y": 830,
+                "width": 65,
+                "height": 26
+            },
+            "target_area_1": {
+                "x": 875,
+                "y": 834,
+                "width": 88,
+                "height": 20
+            },
+            "bet_button_area_1": {
+                "x": 1047,
+                "y": 825,
+                "width": 151,
+                "height": 43
+            },
+            "bet_value_area_2": {
+                "x": 686,
+                "y": 982,
+                "width": 72,
+                "height": 21
+            },
+            "target_area_2": {
+                "x": 879,
+                "y": 980,
+                "width": 73,
+                "height": 23
+            },
+            "bet_button_area_2": {
+                "x": 1042,
+                "y": 967,
+                "width": 156,
+                "height": 49
+            }
+        },
+        "FIREFOX LENOVO 90%": {
+            "multiplier_area": {
+                "x": 840,
+                "y": 378,
+                "width": 156,
+                "height": 64
+            },
+            "balance_area": {
+                "x": 1454,
+                "y": 132,
+                "width": 75,
+                "height": 20
+            },
+            "bet_area": {
+                "x": 819,
+                "y": 437,
+                "width": 214,
+                "height": 69
+            },
+            "bet_value_area_1": {
+                "x": 697,
+                "y": 816,
+                "width": 64,
+                "height": 22
+            },
+            "target_area_1": {
+                "x": 881,
+                "y": 813,
+                "width": 64,
+                "height": 21
+            },
+            "bet_button_area_1": {
+                "x": 1038,
+                "y": 802,
+                "width": 94,
+                "height": 44
+            },
+            "bet_value_area_2": {
+                "x": 693,
+                "y": 965,
+                "width": 55,
+                "height": 16
+            },
+            "target_area_2": {
+                "x": 890,
+                "y": 963,
+                "width": 62,
+                "height": 15
+            },
+            "bet_button_area_2": {
+                "x": 1037,
+                "y": 950,
+                "width": 102,
+                "height": 38
+            }
+        },
+        "LENOVO EDGE 90%": {
+            "multiplier_area": {
+                "x": 844,
+                "y": 383,
+                "width": 149,
+                "height": 58
+            },
+            "balance_area": {
+                "x": 1451,
+                "y": 134,
+                "width": 68,
+                "height": 18
+            },
+            "bet_area": {
+                "x": 826,
+                "y": 438,
+                "width": 211,
+                "height": 64
+            },
+            "bet_value_area_1": {
+                "x": 694,
+                "y": 822,
+                "width": 56,
+                "height": 17
+            },
+            "target_area_1": {
+                "x": 876,
+                "y": 819,
+                "width": 86,
+                "height": 22
+            },
+            "bet_button_area_1": {
+                "x": 1041,
+                "y": 806,
+                "width": 150,
+                "height": 44
+            },
+            "bet_value_area_2": null,
+            "target_area_2": null,
+            "bet_button_area_2": null
+        },
+        "ACER NITRO LIMA FIREFOX 90%": {
+            "multiplier_area": {
+                "x": 845,
+                "y": 385,
+                "width": 148,
+                "height": 57
+            },
+            "balance_area": {
+                "x": 1458,
+                "y": 135,
+                "width": 64,
+                "height": 22
+            },
+            "bet_area": {
+                "x": 826,
+                "y": 442,
+                "width": 203,
+                "height": 61
+            },
+            "bet_value_area_1": {
+                "x": 724,
+                "y": 820,
+                "width": 21,
+                "height": 20
+            },
+            "target_area_1": {
+                "x": 897,
+                "y": 822,
+                "width": 37,
+                "height": 11
+            },
+            "bet_button_area_1": {
+                "x": 1038,
+                "y": 803,
+                "width": 45,
+                "height": 43
+            },
+            "bet_value_area_2": {
+                "x": 727,
+                "y": 970,
+                "width": 15,
+                "height": 17
+            },
+            "target_area_2": {
+                "x": 889,
+                "y": 965,
+                "width": 51,
+                "height": 20
+            },
+            "bet_button_area_2": {
+                "x": 1043,
+                "y": 954,
+                "width": 46,
+                "height": 42
+            }
+        }
+    }
+}

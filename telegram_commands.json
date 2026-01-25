@@ -1,0 +1,10 @@
+[
+  {
+    "command": "nivel",
+    "params": {
+      "nivel": 7
+    },
+    "timestamp": "2026-01-06T19:07:42.910591",
+    "executed": true
+  }
+]

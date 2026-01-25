@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrashMonitor - Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding: 0 10px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #00d4aa, #00b894);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo span:first-of-type {
+            color: #00d4aa;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 212, 170, 0.15);
+            border: 1px solid rgba(0, 212, 170, 0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .session-info {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .session-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .session-item-label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .session-item-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .session-item-value.highlight {
+            color: #00d4aa;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #00d4aa;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 16px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card-icon {
+            width: 24px;
+            height: 24px;
+            opacity: 0.5;
+        }
+
+        /* Multiplicadores */
+        .mult-card {
+            grid-column: span 8;
+        }
+
+        .mult-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .mult-pill {
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .mult-pill:hover {
+            transform: scale(1.05);
+        }
+
+        .mult-pill.high {
+            background: linear-gradient(135deg, rgba(0, 212, 170, 0.3), rgba(0, 184, 148, 0.2));
+            border-color: rgba(0, 212, 170, 0.5);
+            color: #00d4aa;
+        }
+
+        .mult-pill.medium {
+            background: linear-gradient(135deg, rgba(253, 203, 110, 0.3), rgba(225, 177, 44, 0.2));
+            border-color: rgba(253, 203, 110, 0.5);
+            color: #fdcb6e;
+        }
+
+        .mult-pill.low {
+            background: linear-gradient(135deg, rgba(255, 107, 129, 0.3), rgba(238, 90, 111, 0.2));
+            border-color: rgba(255, 107, 129, 0.5);
+            color: #ff6b81;
+        }
+
+        /* Rally Meter */
+        .rally-card {
+            grid-column: span 4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .rally-gauge {
+            position: relative;
+            width: 140px;
+            height: 80px;
+            margin-bottom: 10px;
+        }
+
+        .rally-gauge canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .rally-value {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .rally-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Saldo */
+        .saldo-card {
+            grid-column: span 4;
+            background: linear-gradient(135deg, rgba(0, 212, 170, 0.15), rgba(0, 184, 148, 0.05));
+            border-color: rgba(0, 212, 170, 0.3);
+        }
+
+        .saldo-value {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .saldo-value span {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 20px;
+        }
+
+        .saldo-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .saldo-change.positive {
+            background: rgba(0, 212, 170, 0.2);
+            color: #00d4aa;
+        }
+
+        .saldo-change.negative {
+            background: rgba(255, 107, 129, 0.2);
+            color: #ff6b81;
+        }
+
+        /* Triggers */
+        .triggers-card {
+            grid-column: span 4;
+        }
+
+        .triggers-value {
+            font-size: 48px;
+            font-weight: 700;
+            color: #a29bfe;
+        }
+
+        .triggers-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+        }
+
+        /* Performance */
+        .perf-card {
+            grid-column: span 4;
+        }
+
+        .perf-stats {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .perf-stat-value {
+            font-size: 36px;
+            font-weight: 700;
+        }
+
+        .perf-stat-value.wins { color: #00d4aa; }
+        .perf-stat-value.losses { color: #ff6b81; }
+
+        .perf-stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+        }
+
+        .perf-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-top: 16px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .perf-bar-win {
+            background: linear-gradient(90deg, #00d4aa, #00b894);
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .perf-bar-loss {
+            background: linear-gradient(90deg, #ff6b81, #ee5a6f);
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        /* Wins por Tentativa */
+        .tentativas-card {
+            grid-column: span 4;
+        }
+
+        .tentativas-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .tentativa-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px 8px;
+            text-align: center;
+        }
+
+        .tentativa-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 4px;
+        }
+
+        .tentativa-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00d4aa;
+        }
+
+        .tentativa-value.zero {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Validacao Estatistica */
+        .validacao-card {
+            grid-column: span 4;
+        }
+
+        .validacao-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .validacao-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+        }
+
+        .validacao-label {
+            font-weight: 600;
+            width: 35px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .validacao-bar-container {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .validacao-bar-expected {
+            position: absolute;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .validacao-bar-real {
+            position: absolute;
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .validacao-bar-real.ok { background: #00d4aa; }
+        .validacao-bar-real.high { background: #fdcb6e; }
+        .validacao-bar-real.low { background: #ff6b81; }
+
+        .validacao-pct {
+            width: 80px;
+            text-align: right;
+            font-size: 12px;
+        }
+
+        .validacao-pct .real { font-weight: 600; }
+        .validacao-pct .esperado { color: rgba(255, 255, 255, 0.4); font-size: 10px; }
+
+        /* Triggers por Hora */
+        .hora-card {
+            grid-column: span 4;
+        }
+
+        .hora-chart {
+            height: 150px;
+        }
+
+        /* Evolução */
+        .evolucao-card {
+            grid-column: span 8;
+        }
+
+        .evolucao-chart {
+            height: 200px;
+        }
+
+        /* Apostas Recentes */
+        .apostas-card {
+            grid-column: span 12;
+        }
+
+        .apostas-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .apostas-table th {
+            text-align: left;
+            padding: 12px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .apostas-table td {
+            padding: 12px;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .apostas-table tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .resultado-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .resultado-badge.win {
+            background: rgba(0, 212, 170, 0.2);
+            color: #00d4aa;
+        }
+
+        .resultado-badge.loss {
+            background: rgba(255, 107, 129, 0.2);
+            color: #ff6b81;
+        }
+
+        .lucro-value.positive { color: #00d4aa; }
+        .lucro-value.negative { color: #ff6b81; }
+
+        /* Responsivo */
+        @media (max-width: 1200px) {
+            .dashboard {
+                grid-template-columns: repeat(8, 1fr);
+            }
+            .mult-card { grid-column: span 8; }
+            .rally-card { grid-column: span 8; }
+            .saldo-card { grid-column: span 4; }
+            .triggers-card { grid-column: span 4; }
+            .perf-card { grid-column: span 4; }
+            .tentativas-card { grid-column: span 4; }
+            .validacao-card { grid-column: span 8; }
+            .hora-card { grid-column: span 4; }
+            .evolucao-card { grid-column: span 8; }
+            .apostas-card { grid-column: span 8; }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            .card {
+                grid-column: span 1 !important;
+            }
+        }
+
+        .loading {
+            opacity: 0.5;
+        }
+
+        .update-time {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                    <path d="M3.5 18.5L9.5 12.5L13.5 16.5L22 6.5" stroke="white" stroke-width="2" fill="none"/>
+                    <path d="M17 6.5H22V11.5" stroke="white" stroke-width="2" fill="none"/>
+                </svg>
+            </div>
+            <span>Crash</span><span style="color: white">Monitor</span>
+        </div>
+        <div class="session-info">
+            <div class="session-item">
+                <span class="session-item-label">Sessao</span>
+                <span class="session-item-value" id="session-id">--</span>
+            </div>
+            <div class="session-item">
+                <span class="session-item-label">Uptime</span>
+                <span class="session-item-value highlight" id="session-uptime">--:--:--</span>
+            </div>
+            <div class="session-item">
+                <span class="session-item-label">Rounds</span>
+                <span class="session-item-value" id="session-rounds">0</span>
+            </div>
+            <div class="session-item">
+                <span class="session-item-label">Ultimo</span>
+                <span class="session-item-value" id="session-last">--:--:--</span>
+            </div>
+            <div class="session-item">
+                <span class="session-item-label">Max Streak</span>
+                <span class="session-item-value" id="session-streak" style="color: #ff6b81;">0</span>
+            </div>
+        </div>
+        <div class="status-badge">
+            <div class="status-dot"></div>
+            <span>Conectado</span>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <!-- Multiplicadores -->
+        <div class="card mult-card">
+            <div class="card-header">
+                <span>Ultimos 13 Multiplicadores</span>
+                <svg class="card-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+            </div>
+            <div class="mult-pills" id="mult-pills">
+                <!-- Preenchido via JS -->
+            </div>
+        </div>
+
+        <!-- Rally Meter -->
+        <div class="card rally-card">
+            <div class="card-header">
+                <span>Rally Meter</span>
+                <svg class="card-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" fill="none"/>
+                </svg>
+            </div>
+            <div class="rally-gauge">
+                <canvas id="rally-gauge"></canvas>
+                <div class="rally-value" id="rally-value">0</div>
+            </div>
+            <div class="rally-label">TRIGGERS/HORA</div>
+        </div>
+
+        <!-- Saldo -->
+        <div class="card saldo-card">
+            <div class="card-header">
+                <span>Saldo Atual</span>
+                <svg class="card-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z"/>
+                </svg>
+            </div>
+            <div class="saldo-value">R$ <span id="saldo-value">0,00</span></div>
+            <div class="saldo-change positive" id="saldo-change">
+                <span>↑</span>
+                <span id="lucro-value">+R$ 0,00</span>
+                <span id="lucro-pct" style="margin-left: 8px; opacity: 0.8;">(+0,0%)</span>
+            </div>
+        </div>
+
+        <!-- Reserva de Lucros -->
+        <div class="card reserva-card" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border: 1px solid #00d4aa;">
+            <div class="card-header">
+                <span style="color: #00d4aa;">Reserva de Lucros</span>
+                <svg class="card-icon" viewBox="0 0 24 24" fill="#00d4aa">
+                    <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+                </svg>
+            </div>
+            <div class="saldo-value" style="color: #00d4aa;">R$ <span id="reserva-value">0,00</span></div>
+            <div style="margin-top: 8px;">
+                <div style="font-size: 11px; color: #888; margin-bottom: 4px;">Meta 10%: <span id="reserva-progresso">0</span>%</div>
+                <div style="background: #333; border-radius: 4px; height: 6px; overflow: hidden;">
+                    <div id="reserva-barra" style="background: #00d4aa; height: 100%; width: 0%; transition: width 0.3s;"></div>
+                </div>
+                <div style="font-size: 10px; color: #666; margin-top: 4px;">Metas: <span id="reserva-metas">0</span>x</div>
+            </div>
+        </div>
+
+        <!-- Triggers -->
+        <div class="card triggers-card">
+            <div class="card-header">
+                <span>Triggers da Sessao</span>
+                <svg class="card-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                </svg>
+            </div>
+            <div class="triggers-value" id="triggers-value">0</div>
+            <div class="triggers-label">apostas</div>
+        </div>
+
+        <!-- Performance -->
+        <div class="card perf-card">
+            <div class="card-header">
+                <span>Performance</span>
+                <svg class="card-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+                </svg>
+            </div>
+            <div class="perf-stats">
+                <div>
+                    <div class="perf-stat-value wins" id="wins-value">0</div>
+                    <div class="perf-stat-label">Wins</div>
+                </div>
+                <div>
+                    <div class="perf-stat-value losses" id="losses-value">0</div>
+                    <div class="perf-stat-label">Losses</div>
+                </div>
+            </div>
+            <div class="perf-bar">
+                <div class="perf-bar-win" id="perf-bar-win" style="width: 50%"></div>
+                <div class="perf-bar-loss" id="perf-bar-loss" style="width: 50%"></div>
+            </div>
+        </div>
+
+        <!-- Wins por Tentativa -->
+        <div class="card tentativas-card">
+            <div class="card-header">
+                <span>Wins por Tentativa</span>
+                <svg class="card-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                </svg>
+            </div>
+            <div class="tentativas-grid" id="tentativas-grid">
+                <div class="tentativa-item"><div class="tentativa-label">T1</div><div class="tentativa-value" id="t1-value">0</div></div>
+                <div class="tentativa-item"><div class="tentativa-label">T2</div><div class="tentativa-value" id="t2-value">0</div></div>
+                <div class="tentativa-item"><div class="tentativa-label">T3</div><div class="tentativa-value" id="t3-value">0</div></div>
+                <div class="tentativa-item"><div class="tentativa-label">T4</div><div class="tentativa-value" id="t4-value">0</div></div>
+                <div class="tentativa-item"><div class="tentativa-label">T5</div><div class="tentativa-value" id="t5-value">0</div></div>
+                <div class="tentativa-item"><div class="tentativa-label">T6+</div><div class="tentativa-value" id="t6-value">0</div></div>
+            </div>
+        </div>
+
+        <!-- Validacao Estatistica -->
+        <div class="card validacao-card">
+            <div class="card-header">
+                <span>Esperado vs Real</span>
+                <svg class="card-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-5h2v5zm4 0h-2v-7h2v7zm4 0h-2v-3h2v3z"/>
+                </svg>
+            </div>
+            <div class="validacao-list" id="validacao-list">
+                <!-- Preenchido via JS -->
+            </div>
+        </div>
+
+        <!-- Triggers por Hora -->
+        <div class="card hora-card">
+            <div class="card-header">
+                <span>Triggers por Hora</span>
+                <svg class="card-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/>
+                </svg>
+            </div>
+            <div class="hora-chart">
+                <canvas id="hora-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Evolução -->
+        <div class="card evolucao-card">
+            <div class="card-header">
+                <span>Evolucao da Banca</span>
+                <svg class="card-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3.5 18.5L9.5 12.5L13.5 16.5L22 6.5M17 6.5H22V11.5" stroke="currentColor" stroke-width="2" fill="none"/>
+                </svg>
+            </div>
+            <div class="evolucao-chart">
+                <canvas id="evolucao-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Apostas Recentes -->
+        <div class="card apostas-card">
+            <div class="card-header">
+                <span>Apostas Recentes</span>
+                <svg class="card-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                </svg>
+            </div>
+            <table class="apostas-table">
+                <thead>
+                    <tr>
+                        <th>Horario</th>
+                        <th>Valor</th>
+                        <th>Alvo</th>
+                        <th>Mult Real</th>
+                        <th>Resultado</th>
+                        <th>Lucro</th>
+                    </tr>
+                </thead>
+                <tbody id="apostas-tbody">
+                    <!-- Preenchido via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="update-time">Ultima atualizacao: <span id="update-time">--:--:--</span></div>
+
+    <script>
+        // Gráficos
+        let horaChart = null;
+        let evolucaoChart = null;
+        let rallyGauge = null;
+        let evolucaoData = [];  // Dados para tooltip do gráfico de evolução
+
+        // Cores
+        const colors = {
+            green: '#00d4aa',
+            red: '#ff6b81',
+            yellow: '#fdcb6e',
+            purple: '#a29bfe',
+            blue: '#74b9ff',
+            gray: 'rgba(255, 255, 255, 0.5)'
+        };
+
+        // Inicializar gráficos
+        function initCharts() {
+            // Rally Gauge
+            const gaugeCtx = document.getElementById('rally-gauge').getContext('2d');
+            rallyGauge = new Chart(gaugeCtx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [0, 10],
+                        backgroundColor: [
+                            'rgba(255, 107, 129, 0.8)',
+                            'rgba(255, 255, 255, 0.1)'
+                        ],
+                        borderWidth: 0,
+                        circumference: 180,
+                        rotation: 270
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } }
+                }
+            });
+
+            // Triggers por Hora
+            const horaCtx = document.getElementById('hora-chart').getContext('2d');
+            horaChart = new Chart(horaCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: colors.purple,
+                        borderRadius: 4,
+                        barThickness: 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: colors.gray }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: colors.gray }
+                        }
+                    }
+                }
+            });
+
+            // Evolução da Banca
+            const evolucaoCtx = document.getElementById('evolucao-chart').getContext('2d');
+            evolucaoChart = new Chart(evolucaoCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        borderColor: colors.green,
+                        backgroundColor: 'rgba(0, 212, 170, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointBackgroundColor: [],
+                        pointBorderColor: [],
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                            titleColor: '#00d4aa',
+                            bodyColor: '#fff',
+                            borderColor: '#00d4aa',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                title: function(context) {
+                                    const idx = context[0].dataIndex;
+                                    const e = evolucaoData[idx];
+                                    if (!e) return '';
+                                    return e.tentativa ? `${e.tentativa} - ${e.timestamp}` : e.timestamp;
+                                },
+                                label: function(context) {
+                                    const idx = context.dataIndex;
+                                    const e = evolucaoData[idx];
+                                    if (!e) return '';
+                                    const lines = [
+                                        `Saldo: R$ ${e.saldo.toFixed(2)}`,
+                                        `Valor: R$ ${e.valor.toFixed(2)} @ ${e.alvo.toFixed(2)}x`,
+                                        `Real: ${e.mult_real.toFixed(2)}x - ${e.resultado}`
+                                    ];
+                                    if (e.lucro !== 0) {
+                                        const sinal = e.lucro >= 0 ? '+' : '';
+                                        lines.push(`P/L: ${sinal}R$ ${e.lucro.toFixed(2)}`);
+                                    }
+                                    return lines;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: colors.gray }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: {
+                                color: colors.gray,
+                                callback: (v) => 'R$ ' + v.toFixed(0)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Classificar multiplicador: verde >= 2, vermelho < 2
+        function classifyMult(mult) {
+            return mult >= 2.0 ? 'high' : 'low';
+        }
+
+        // Atualizar dashboard
+        async function updateDashboard() {
+            try {
+                const response = await fetch('/api/dashboard?t=' + Date.now());
+                const data = await response.json();
+
+                // Session Info
+                const sessionInfo = data.session_info || {};
+                document.getElementById('session-id').textContent = sessionInfo.sessao_id || '--';
+                document.getElementById('session-uptime').textContent = sessionInfo.uptime || '--:--:--';
+                document.getElementById('session-rounds').textContent = sessionInfo.total_rounds || 0;
+                document.getElementById('session-last').textContent = sessionInfo.ultimo_round || '--:--:--';
+
+                // Max Streak de baixos (mostra atual/max)
+                const streakAtual = sessionInfo.streak_baixos || 0;
+                const streakMax = sessionInfo.max_streak_baixos || 0;
+                const streakEl = document.getElementById('session-streak');
+                streakEl.textContent = streakAtual > 0 ? `${streakAtual}/${streakMax}` : streakMax;
+                // Cor baseada no streak atual (quanto maior, mais vermelho)
+                if (streakAtual >= 5) {
+                    streakEl.style.color = '#ff6b81';  // Vermelho
+                } else if (streakAtual >= 3) {
+                    streakEl.style.color = '#fdcb6e';  // Amarelo
+                } else {
+                    streakEl.style.color = 'rgba(255, 255, 255, 0.9)';  // Normal
+                }
+
+                // Saldo
+                document.getElementById('saldo-value').textContent = data.saldo_atual.toFixed(2).replace('.', ',');
+
+                // Lucro e Porcentagem
+                const lucro = data.lucro;
+                const lucroPct = data.lucro_pct || 0;
+                const lucroEl = document.getElementById('lucro-value');
+                const pctEl = document.getElementById('lucro-pct');
+                const changeEl = document.getElementById('saldo-change');
+                lucroEl.textContent = (lucro >= 0 ? '+' : '') + 'R$ ' + lucro.toFixed(2).replace('.', ',');
+                pctEl.textContent = '(' + (lucroPct >= 0 ? '+' : '') + lucroPct.toFixed(1).replace('.', ',') + '%)';
+                changeEl.className = 'saldo-change ' + (lucro >= 0 ? 'positive' : 'negative');
+                changeEl.querySelector('span:first-child').textContent = lucro >= 0 ? '↑' : '↓';
+
+                // Reserva de Lucros
+                const reservaTotal = data.reserva_total || 0;
+                const reservaProgresso = data.reserva_progresso || 0;
+                const reservaMetas = data.reserva_metas || 0;
+                document.getElementById('reserva-value').textContent = reservaTotal.toFixed(2).replace('.', ',');
+                document.getElementById('reserva-progresso').textContent = reservaProgresso.toFixed(0);
+                document.getElementById('reserva-metas').textContent = reservaMetas;
+                document.getElementById('reserva-barra').style.width = Math.min(reservaProgresso, 100) + '%';
+
+                // Triggers
+                const triggers = data.sessoes_win + data.sessoes_loss;
+                document.getElementById('triggers-value').textContent = triggers;
+
+                // Performance (usa sessoes do state, não bets individuais)
+                const wins = data.sessoes_win || 0;
+                const losses = data.sessoes_loss || 0;
+                document.getElementById('wins-value').textContent = wins;
+                document.getElementById('losses-value').textContent = losses;
+
+                const total = wins + losses;
+                if (total > 0) {
+                    document.getElementById('perf-bar-win').style.width = (wins / total * 100) + '%';
+                    document.getElementById('perf-bar-loss').style.width = (losses / total * 100) + '%';
+                }
+
+                // Wins por Tentativa
+                const tentativas = data.wins_por_tentativa || {};
+                ['T1', 'T2', 'T3', 'T4', 'T5', 'T6+'].forEach((t, i) => {
+                    const id = `t${i < 5 ? i + 1 : 6}-value`;
+                    const val = tentativas[t] || 0;
+                    const el = document.getElementById(id);
+                    el.textContent = val;
+                    el.className = 'tentativa-value' + (val === 0 ? ' zero' : '');
+                });
+
+                // Validacao Estatistica
+                const validacao = data.validacao || {};
+                const validacaoList = document.getElementById('validacao-list');
+                if (validacao.items && validacao.items.length > 0) {
+                    validacaoList.innerHTML = validacao.items.map(item => `
+                        <div class="validacao-item">
+                            <span class="validacao-label">${item.label}</span>
+                            <div class="validacao-bar-container">
+                                <div class="validacao-bar-expected" style="width: ${item.esperado}%"></div>
+                                <div class="validacao-bar-real ${item.status}" style="width: ${Math.min(item.real, 100)}%"></div>
+                            </div>
+                            <div class="validacao-pct">
+                                <span class="real">${item.real}%</span>
+                                <span class="esperado">(${item.esperado}%)</span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    validacaoList.innerHTML = '<div style="color: rgba(255,255,255,0.4); text-align: center; padding: 20px;">Aguardando dados...</div>';
+                }
+
+                // Multiplicadores
+                const multPills = document.getElementById('mult-pills');
+                multPills.innerHTML = data.multiplicadores.map(m =>
+                    `<div class="mult-pill ${classifyMult(m)}">${m.toFixed(2)}x</div>`
+                ).join('');
+
+                // Rally Gauge
+                const freq = data.freq_triggers || 0;
+                document.getElementById('rally-value').textContent = freq.toFixed(0);
+
+                // Atualizar cor do gauge baseado na frequência
+                let gaugeColor;
+                if (freq >= 3) gaugeColor = colors.red;
+                else if (freq >= 2) gaugeColor = colors.yellow;
+                else gaugeColor = colors.green;
+
+                rallyGauge.data.datasets[0].data = [Math.min(freq, 10), Math.max(10 - freq, 0)];
+                rallyGauge.data.datasets[0].backgroundColor[0] = gaugeColor;
+                rallyGauge.update('none');
+
+                // Triggers por Hora
+                const horaLabels = Object.keys(data.triggers_hora || {});
+                const horaData = Object.values(data.triggers_hora || {});
+                horaChart.data.labels = horaLabels;
+                horaChart.data.datasets[0].data = horaData;
+                horaChart.update('none');
+
+                // Evolução - armazenar dados para tooltip
+                evolucaoData = data.evolucao || [];
+                const evoLabels = evolucaoData.map(e => e.timestamp);
+                const evoDataChart = evolucaoData.map(e => e.saldo);
+                const evoColors = evolucaoData.map(e => e.resultado === 'WIN' ? colors.green : colors.red);
+
+                evolucaoChart.data.labels = evoLabels;
+                evolucaoChart.data.datasets[0].data = evoDataChart;
+                evolucaoChart.data.datasets[0].pointBackgroundColor = evoColors;
+                evolucaoChart.data.datasets[0].pointBorderColor = evoColors;
+                evolucaoChart.update('none');
+
+                // Apostas
+                const tbody = document.getElementById('apostas-tbody');
+                tbody.innerHTML = data.apostas.map(a => `
+                    <tr>
+                        <td>${a.timestamp.split(' ')[1] || a.timestamp}</td>
+                        <td>R$ ${a.valor.toFixed(2)}</td>
+                        <td>${a.alvo.toFixed(2)}x</td>
+                        <td>${a.multiplicador.toFixed(2)}x</td>
+                        <td><span class="resultado-badge ${a.resultado.toLowerCase()}">${a.resultado}</span></td>
+                        <td class="lucro-value ${a.lucro >= 0 ? 'positive' : 'negative'}">R$ ${a.lucro >= 0 ? '+' : ''}${a.lucro.toFixed(2)}</td>
+                    </tr>
+                `).join('');
+
+                // Update time
+                document.getElementById('update-time').textContent = new Date().toLocaleTimeString('pt-BR');
+
+            } catch (error) {
+                console.error('Erro ao atualizar:', error);
+            }
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            updateDashboard();
+            setInterval(updateDashboard, 3000);
+        });
+    </script>
+</body>
+</html>
