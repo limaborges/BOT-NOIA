@@ -151,3 +151,46 @@ O arquivo `config.json` contém as coordenadas de tela. Se o layout do jogo for 
 - Botão de apostar
 
 Use `ocr_debug.py` para testar as regiões.
+
+---
+
+## 10. Sincronização em Tempo Real (Dual Account)
+
+O sistema permite sincronizar estado entre máquinas para o Telegram unificado.
+
+### Quando HABILITAR (máquina participa do dual):
+
+Crie o arquivo `sync_config.json` na pasta do bot:
+```json
+{
+  "server_ip": "192.168.0.200",
+  "server_port": 5555,
+  "enabled": true
+}
+```
+
+- `server_ip`: IP da máquina Linux que roda o `sync_server.py`
+- `server_port`: Porta do servidor (padrão 5555)
+- `enabled`: true para ativar sincronização
+
+### Quando NÃO HABILITAR (máquina opera isolada):
+
+**Não crie o arquivo `sync_config.json`.**
+
+Sem o arquivo, o sync fica automaticamente desabilitado e a máquina opera de forma independente, sem interferir no sistema dual.
+
+### Resumo:
+
+| Máquina | sync_config.json | Resultado |
+|---------|------------------|-----------|
+| Linux (servidor) | Não precisa | Roda `sync_server.py` |
+| Windows (dual) | **Criar** | Envia dados para Linux |
+| Windows (isolada) | **Não criar** | Opera independente |
+
+### Testar conexão:
+
+```bash
+python sync_client.py
+```
+
+Se configurado corretamente, mostrará "Servidor online!".
