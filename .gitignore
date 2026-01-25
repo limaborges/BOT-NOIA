@@ -57,4 +57,5 @@ telegram_config.json
 
 # Arquivos Windows
 *.bat
+!iniciar.bat
 *.exe
