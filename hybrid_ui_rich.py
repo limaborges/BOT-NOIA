@@ -450,8 +450,8 @@ class HybridUIRich:
             # Linha 2: Lucro
             lines.append(f"[{cor_lucro}]{sinal}{lucro_pct:.1f}%[/{cor_lucro}] ({sinal}R${lucro_bruto:.2f})")
 
-            # Detectar modo NS7_PURO
-            is_ns7_puro = modo == 'NS7_PURO'
+            # Detectar modos sem reserva (NS7_PURO, G6_NS9, G6_NS10)
+            modo_sem_reserva = modo in ['NS7_PURO', 'G6_NS9', 'G6_NS10']
 
             # Linha 3: Status (barra de gatilho e aposta base)
             lines.append(f"{status}  Base: R$ {aposta_base:.2f}")
@@ -567,9 +567,9 @@ class HybridUIRich:
                 if sangrou > 0 or zerou > 0:
                     lines.append(f"[red]ALERTA: Sangrou:{sangrou} Zerou:{zerou}[/red]")
 
-            # ===== PAINEL RESERVA DE LUCROS (oculto no NS7_PURO) =====
+            # ===== PAINEL RESERVA DE LUCROS (oculto em modos sem reserva) =====
             reserva = data.get('reserva')
-            if reserva and not is_ns7_puro:
+            if reserva and not modo_sem_reserva:
                 lines.append("")
                 lines.append("[bold magenta]--- Reserva de Lucros ---[/bold magenta]")
 

@@ -498,9 +498,11 @@ class HybridSystemV2:
         self.total_depositos = getattr(self, 'total_depositos', 0.0)
 
         # ===== INICIALIZAR RESERVA DE LUCROS =====
-        # NS7_PURO: sem reserva - usar 100% da banca
-        if self.config_modo.modo == ModoOperacao.NS7_PURO:
-            self._log(f"{Fore.MAGENTA}NS7 PURO: Reserva DESATIVADA - 100% banca operacional")
+        # NS7_PURO, G6_NS9, G6_NS10: sem reserva - usar 100% da banca
+        modos_sem_reserva = [ModoOperacao.NS7_PURO, ModoOperacao.G6_NS9, ModoOperacao.G6_NS10]
+        if self.config_modo.modo in modos_sem_reserva:
+            modo_nome = self.config_modo.modo.value.upper().replace('_', '+')
+            self._log(f"{Fore.MAGENTA}{modo_nome}: Reserva DESATIVADA - 100% banca operacional")
             # Inicializar com reserva zerada
             self.reserva_manager.inicializar(self.saldo_atual)
             self.reserva_manager.estado.reserva_total = 0.0
@@ -520,8 +522,8 @@ class HybridSystemV2:
             self.reserva_manager.inicializar(self.saldo_atual)
             self._log(f"{Fore.GREEN}Nova sessao - Reserva zerada, banca base: R$ {self.saldo_atual:.2f}")
 
-        # NS7_PURO: nao mostrar meta (sem reserva)
-        if self.config_modo.modo != ModoOperacao.NS7_PURO:
+        # Modos sem reserva: nao mostrar meta
+        if self.config_modo.modo not in modos_sem_reserva:
             self._log(f"{Fore.CYAN}Meta 10%: R$ {self.reserva_manager.get_meta_valor():.2f}")
 
         # Salvar estado inicial
