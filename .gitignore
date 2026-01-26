@@ -47,6 +47,7 @@ compartilhado/
 !SETUP_WINDOWS.md
 !GIT_WORKFLOW.md
 !TELEGRAM_CONFIG.md
+!INSTRUCOES_CLAUDE_WINDOWS.txt
 *.png
 !templates_matching/*.png
 *.jpg

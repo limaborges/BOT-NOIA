@@ -1,0 +1,57 @@
+INSTRUÇÕES PARA CLAUDE CODE NO WINDOWS
+=======================================
+
+O repositório já está no GitHub: https://github.com/limaborges/BOT-NOIA.git
+
+PASSOS:
+
+1. Clonar o repositório:
+   cd C:\Users\SEU_USUARIO
+   git clone https://github.com/limaborges/BOT-NOIA.git MartingaleV2_Build
+   cd MartingaleV2_Build
+
+2. Criar ambiente virtual e instalar dependências:
+   python -m venv venv
+   venv\Scripts\activate
+   pip install rich pyautogui opencv-python numpy pillow mss
+
+3. Ler o arquivo SETUP_WINDOWS.md para instruções detalhadas
+
+4. Zerar o arquivo reserva_state.json (IMPORTANTE - evita bug da aposta base):
+   {
+     "banca_base": 0,
+     "reserva_total": 0,
+     "total_metas_batidas": 0,
+     "lucro_acumulado": 0,
+     "divida_reserva": 0.0,
+     "total_emprestimos": 0,
+     "total_emprestado": 0.0
+   }
+
+5. Executar:
+   venv\Scripts\python start_v2.py
+   Selecionar modo G6_NS10 (conservador)
+
+6. Para sincronizar alterações:
+   git pull
+
+PROBLEMA CONHECIDO:
+Se a aposta base aparecer pela metade (ex: 0.98 ao invés de 1.96),
+o sistema de reserva está ativo indevidamente. Zere o reserva_state.json
+e reinicie o bot.
+
+=======================================
+SINCRONIZAÇÃO DUAL ACCOUNT (OPCIONAL)
+=======================================
+
+Se esta máquina faz parte do sistema DUAL (junto com o Linux):
+Criar arquivo sync_config.json na pasta do bot:
+{
+  "server_ip": "192.168.0.200",
+  "server_port": 5555,
+  "enabled": true
+}
+
+Se esta máquina opera ISOLADA (independente):
+NÃO criar o arquivo sync_config.json.
+Sem o arquivo, o sync fica desabilitado automaticamente.
