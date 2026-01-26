@@ -15,7 +15,7 @@
 
 ┌─────────────────────────────────────────────────────────┐
 │                  BOT ISOLADO (Bot 2)                    │
-│              Token: CRIAR NOVO no @BotFather            │
+│              Token: @JaceNoiaBot                        │
 ├─────────────────────────────────────────────────────────┤
 │  Windows Isolada                                        │
 │  - Roda telegram_bot.py                                 │
@@ -73,11 +73,11 @@
 
 ### 3. Windows Isolada
 
-**telegram_config.json:** CRIAR COM NOVO TOKEN
+**telegram_config.json:** USAR TOKEN DO @JaceNoiaBot
 ```json
 {
-  "token": "TOKEN_DO_BOT_ISOLADO",
-  "chat_id": "SEU_CHAT_ID",
+  "token": "TOKEN_DO_JACENOIA_BOT",
+  "chat_id": "7460639576",
   "enabled": true
 }
 ```
@@ -85,19 +85,18 @@
 **sync_config.json:** NÃO CRIAR
 
 **Serviços ativos:**
-- `telegram_bot.py` ✅ (com token diferente)
+- `telegram_bot.py` ✅ (com token do JaceNoiaBot)
 - `sync_client.py` ❌ (desabilitado)
 
 ---
 
-## Criar Novo Bot no Telegram
+## Como obter o token do @JaceNoiaBot
 
-1. Abra o Telegram e procure @BotFather
-2. Envie `/newbot`
-3. Dê um nome: `MartingaleIsolado` (ou outro)
-4. Dê um username: `MartingaleIsolado_bot` (deve terminar com _bot)
-5. Copie o token gerado
-6. Use esse token no `telegram_config.json` da máquina isolada
+1. Abrir Telegram → @BotFather
+2. Enviar `/mybots`
+3. Selecionar @JaceNoiaBot
+4. Clicar em "API Token"
+5. Copiar o token
 
 ---
 

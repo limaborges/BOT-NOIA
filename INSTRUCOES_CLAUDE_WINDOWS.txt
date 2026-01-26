@@ -1,84 +1,98 @@
-INSTRUÇÕES PARA CLAUDE CODE NO WINDOWS
-=======================================
+===============================================================
+INSTRUÇÕES PARA CLAUDE CODE - LEIA COM ATENÇÃO
+===============================================================
 
-O repositório já está no GitHub: https://github.com/limaborges/BOT-NOIA.git
+Repositório: https://github.com/limaborges/BOT-NOIA.git
 
-PASSOS:
+PRIMEIRO: Identificar qual máquina é esta:
+- Windows DUAL (CONSERVADORA) = trabalha em conjunto com Linux
+- Windows ISOLADA = trabalha sozinha, usa Chrome
 
-1. Clonar o repositório:
-   cd C:\Users\SEU_USUARIO
-   git clone https://github.com/limaborges/BOT-NOIA.git MartingaleV2_Build
-   cd MartingaleV2_Build
+===============================================================
+SE ESTA MÁQUINA É: WINDOWS DUAL (CONSERVADORA)
+===============================================================
 
-2. Criar ambiente virtual e instalar dependências:
-   python -m venv venv
-   venv\Scripts\activate
-   pip install rich pyautogui opencv-python numpy pillow mss
-
-3. Ler o arquivo SETUP_WINDOWS.md para instruções detalhadas
-
-4. Zerar o arquivo reserva_state.json (IMPORTANTE - evita bug da aposta base):
-   {
-     "banca_base": 0,
-     "reserva_total": 0,
-     "total_metas_batidas": 0,
-     "lucro_acumulado": 0,
-     "divida_reserva": 0.0,
-     "total_emprestimos": 0,
-     "total_emprestado": 0.0
-   }
-
-5. Executar:
-   venv\Scripts\python start_v2.py
-   Selecionar modo G6_NS10 (conservador)
-
-6. Para sincronizar alterações:
+PASSO 1: Atualizar código
    git pull
 
-PROBLEMA CONHECIDO:
-Se a aposta base aparecer pela metade (ex: 0.98 ao invés de 1.96),
-o sistema de reserva está ativo indevidamente. Zere o reserva_state.json
-e reinicie o bot.
+PASSO 2: Criar/editar telegram_config.json com:
+   {"enabled": false}
 
-=======================================
-SINCRONIZAÇÃO DUAL ACCOUNT (OPCIONAL)
-=======================================
+PASSO 3: Criar sync_config.json com:
+   {
+     "server_ip": "192.168.0.200",
+     "server_port": 5555,
+     "enabled": true
+   }
 
-Se esta máquina faz parte do sistema DUAL (junto com o Linux):
-Criar arquivo sync_config.json na pasta do bot:
-{
-  "server_ip": "192.168.0.200",
-  "server_port": 5555,
-  "enabled": true
-}
+PASSO 4: Criar machine_config.json com:
+   {
+     "browser": "firefox",
+     "machine_name": "Windows Dual"
+   }
 
-Se esta máquina opera ISOLADA (independente):
-NÃO criar o arquivo sync_config.json.
-Sem o arquivo, o sync fica desabilitado automaticamente.
+PASSO 5: Reiniciar o bot
 
-=======================================
-CONFIGURAÇÃO DO NAVEGADOR (IMPORTANTE!)
-=======================================
+RESULTADO ESPERADO:
+- Telegram NÃO deve iniciar (vai aparecer "Telegram desabilitado")
+- Sync com Linux deve funcionar
+- Navegador: Firefox
 
-O sistema de refresh automático precisa saber qual navegador está sendo usado.
-Criar arquivo machine_config.json na pasta do bot:
+===============================================================
+SE ESTA MÁQUINA É: WINDOWS ISOLADA
+===============================================================
 
-Se usa FIREFOX:
-{
-  "browser": "firefox",
-  "machine_name": "Windows Dual"
-}
+PASSO 1: Atualizar código
+   git pull
 
-Se usa CHROME:
-{
-  "browser": "chrome",
-  "machine_name": "Windows Isolada"
-}
+PASSO 2: Obter token do @JaceNoiaBot:
+   - Telegram → @BotFather → /mybots → JaceNoiaBot → API Token
 
-ATENÇÃO:
-- Linux (AGRESSIVA) = Firefox
-- Windows Dual (CONSERVADORA) = Firefox
-- Windows Isolada = Chrome
+PASSO 3: Criar/editar telegram_config.json com:
+   {
+     "token": "TOKEN_DO_JACENOIA_BOT_AQUI",
+     "chat_id": "7460639576",
+     "enabled": true
+   }
 
-Se o arquivo não existir, o padrão é Firefox.
-A máquina que usa Chrome PRECISA criar este arquivo com "browser": "chrome".
+PASSO 4: NÃO criar sync_config.json (ou deletar se existir)
+
+PASSO 5: Criar machine_config.json com:
+   {
+     "browser": "chrome",
+     "machine_name": "Windows Isolada"
+   }
+
+PASSO 6: Reiniciar o bot
+
+RESULTADO ESPERADO:
+- Telegram deve iniciar com @JaceNoiaBot (bot separado)
+- Sync deve estar desabilitado
+- Navegador: Chrome
+
+===============================================================
+ARQUIVOS DE CONFIGURAÇÃO - RESUMO
+===============================================================
+
+                    | Windows DUAL    | Windows ISOLADA
+--------------------|-----------------|------------------
+telegram_config.json| enabled: false  | token do JaceNoiaBot
+sync_config.json    | CRIAR (IP Linux)| NÃO CRIAR
+machine_config.json | browser: firefox| browser: chrome
+
+===============================================================
+PROBLEMAS CONHECIDOS
+===============================================================
+
+1. Aposta base pela metade:
+   - Zerar reserva_state.json
+   - Reiniciar bot
+
+2. Telegram mostra dados errados:
+   - Verificar se telegram_config.json está correto
+   - Windows Dual: enabled: false
+   - Windows Isolada: token do JaceNoiaBot (diferente!)
+
+3. Bot do JaceNoiaBot não responde:
+   - Verificar se o token está correto
+   - No Telegram: /start no @JaceNoiaBot
