@@ -275,12 +275,12 @@ def selecionar_modo_operacao() -> ConfiguracaoModo:
 
     print(f"\n{Fore.YELLOW}  4. G6+NS9 AGRESSIVO (NOVO)")
     print(f"{Fore.WHITE}     - Gatilho: 6 baixas | Divisor: 511")
-    print(f"{Fore.WHITE}     - Protecao: 15 | Alvo: 1.99x")
+    print(f"{Fore.WHITE}     - Protecao: 15 | Alvo: 2.00x")
     print(f"{Fore.WHITE}     - ~R$ 25k/mes por R$ 10k | 2 busts/ano")
 
     print(f"\n{Fore.GREEN}  5. G6+NS10 CONSERVADOR (NOVO)")
     print(f"{Fore.WHITE}     - Gatilho: 6 baixas | Divisor: 1023")
-    print(f"{Fore.WHITE}     - Protecao: 16 | Alvo: 1.99x")
+    print(f"{Fore.WHITE}     - Protecao: 16 | Alvo: 2.00x")
     print(f"{Fore.WHITE}     - ~R$ 12k/mes por R$ 10k | 0 busts")
 
     while True:
@@ -307,28 +307,29 @@ def selecionar_modo_operacao() -> ConfiguracaoModo:
     # Configurar nivel e alvo baseado no modo
     if modo == ModoOperacao.G6_NS9:
         nivel_inicial = 9
-        alvo_defesa = 1.99  # Sem defesa, sempre 1.99x
+        alvo_defesa = 2.00  # Sem defesa, sempre 2.00x
         print(f"\n{Fore.YELLOW}{'='*60}")
         print(f"{Fore.YELLOW}       G6+NS9 AGRESSIVO")
         print(f"{Fore.YELLOW}{'='*60}")
         print(f"\n{Fore.WHITE}  Configuracao:")
         print(f"{Fore.WHITE}    - Gatilho: 6 baixas consecutivas")
         print(f"{Fore.WHITE}    - Nivel: NS9 (divisor 511, 9 tentativas)")
-        print(f"{Fore.WHITE}    - Alvo: 1.99x")
+        print(f"{Fore.WHITE}    - Alvo: 2.00x")
         print(f"{Fore.WHITE}    - Protecao: 15 baixas")
         print(f"{Fore.RED}    - Busts esperados: 2 por ano")
         print(f"{Fore.GREEN}    - Retorno: ~R$ 25k/mes por R$ 10k")
+        print(f"{Fore.CYAN}    - Auto-upgrade: NS9->NS10 ao atingir 5.8% lucro")
 
     elif modo == ModoOperacao.G6_NS10:
         nivel_inicial = 10
-        alvo_defesa = 1.99  # Sem defesa, sempre 1.99x
+        alvo_defesa = 2.00  # Sem defesa, sempre 2.00x
         print(f"\n{Fore.GREEN}{'='*60}")
         print(f"{Fore.GREEN}       G6+NS10 CONSERVADOR")
         print(f"{Fore.GREEN}{'='*60}")
         print(f"\n{Fore.WHITE}  Configuracao:")
         print(f"{Fore.WHITE}    - Gatilho: 6 baixas consecutivas")
         print(f"{Fore.WHITE}    - Nivel: NS10 (divisor 1023, 10 tentativas)")
-        print(f"{Fore.WHITE}    - Alvo: 1.99x")
+        print(f"{Fore.WHITE}    - Alvo: 2.00x")
         print(f"{Fore.WHITE}    - Protecao: 16 baixas")
         print(f"{Fore.GREEN}    - Busts esperados: 0 (dataset 1.3M)")
         print(f"{Fore.GREEN}    - Retorno: ~R$ 12k/mes por R$ 10k")
@@ -350,10 +351,18 @@ def selecionar_modo_operacao() -> ConfiguracaoModo:
         nivel_inicial = 7
         alvo_defesa = 1.25
 
+    # Definir lucro_para_subir baseado no modo
+    # G6_NS9/G6_NS10: 5.8% (meta diária para migração)
+    # AUTOMATICO: 100% (default, mas pergunta ao usuário)
+    if modo in [ModoOperacao.G6_NS9, ModoOperacao.G6_NS10]:
+        lucro_para_subir_default = 5.8
+    else:
+        lucro_para_subir_default = 100.0
+
     config_modo = ConfiguracaoModo(
         modo=modo,
         nivel_inicial=nivel_inicial,
-        lucro_para_subir=100.0,
+        lucro_para_subir=lucro_para_subir_default,
         alvo_defesa=alvo_defesa
     )
 

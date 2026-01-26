@@ -1398,14 +1398,16 @@ class HybridSystemV2:
         )
 
         # ===== VERIFICAR UPGRADE AUTOMATICO DE NIVEL =====
-        if self.config_modo.modo == ModoOperacao.AUTOMATICO:
+        # Funciona para AUTOMATICO, G6_NS9 e G6_NS10
+        modos_com_upgrade = [ModoOperacao.AUTOMATICO, ModoOperacao.G6_NS9, ModoOperacao.G6_NS10]
+        if self.config_modo.modo in modos_com_upgrade:
             self.verificar_upgrade_nivel()
 
         # ===== AUTO-SAVE APOS CADA SESSAO =====
         self.salvar_estado()
 
     def verificar_upgrade_nivel(self):
-        """Verifica se deve subir de nivel no modo automatico"""
+        """Verifica se deve subir de nivel (AUTOMATICO, G6_NS9, G6_NS10)"""
         if not self.deposito_inicial or self.deposito_inicial <= 0:
             return
 
@@ -1414,7 +1416,7 @@ class HybridSystemV2:
         lucro_atual = self.saldo_atual - self.deposito_inicial + saques
         lucro_percentual = (lucro_atual / self.deposito_inicial) * 100
 
-        # Verificar se atingiu o threshold para subir
+        # Verificar se atingiu o threshold para subir (sempre em %)
         if lucro_percentual >= self.config_modo.lucro_para_subir:
             nivel_atual = self.martingale.nivel_seguranca
             nivel_maximo = get_nivel_para_banca(self.saldo_atual)
@@ -1430,7 +1432,7 @@ class HybridSystemV2:
                 print(f"\n{Fore.GREEN}{'='*50}")
                 print(f"{Fore.GREEN}  UPGRADE AUTOMATICO DE NIVEL!")
                 print(f"{Fore.GREEN}{'='*50}")
-                print(f"{Fore.WHITE}  Lucro atingido: {lucro_percentual:.1f}%")
+                print(f"{Fore.WHITE}  Meta: {self.config_modo.lucro_para_subir:.1f}% | Lucro: {lucro_percentual:.1f}%")
                 print(f"{Fore.WHITE}  {NIVEIS_SEGURANCA[nivel_atual]['nome']} -> {NIVEIS_SEGURANCA[novo_nivel]['nome']}")
                 print(f"{Fore.WHITE}  Nova base: R$ {self.deposito_inicial:.2f}")
                 print(f"{Fore.GREEN}{'='*50}\n")
@@ -1526,6 +1528,10 @@ class HybridSystemV2:
         if hasattr(self.estado_anterior, 'historico_apostas') and self.estado_anterior.historico_apostas:
             self.historico_apostas = self.estado_anterior.historico_apostas
             self._log(f"{Fore.WHITE}  Historico: {len(self.historico_apostas)} apostas restauradas")
+
+        # NAO restaurar config_modo - usar o que veio do start_v2.py
+        # O config_modo do start_v2.py tem os valores corretos (lucro_para_subir=5.8 para G6)
+        self._log(f"{Fore.WHITE}  Modo: {self.config_modo.modo.value} | Meta: {self.config_modo.lucro_para_subir:.1f}%")
 
         self._log(f"{Fore.GREEN}Sessao restaurada!")
         self._log(f"{Fore.WHITE}  Nivel: {NIVEIS_SEGURANCA[self.estado_anterior.nivel_seguranca]['nome']}")
@@ -1804,7 +1810,7 @@ class HybridSystemV2:
             'nivel_seguranca': self.martingale.nivel_seguranca,
             'nome_nivel': self.martingale.NOME_NIVEL,
             'modo_operacao': self.config_modo.modo.value,
-            'lucro_para_subir': self.config_modo.lucro_para_subir if self.config_modo.modo == ModoOperacao.AUTOMATICO else None,
+            'lucro_para_subir': self.config_modo.lucro_para_subir if self.config_modo.modo in [ModoOperacao.AUTOMATICO, ModoOperacao.G6_NS9, ModoOperacao.G6_NS10] else None,
             'nivel_maximo_permitido': get_nivel_para_banca(self.saldo_atual),
             'total_saques': getattr(self, 'total_saques', 0.0),
             # Validacao estatistica

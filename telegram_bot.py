@@ -64,6 +64,9 @@ class TelegramBot:
         self.running = False
         self.last_update_id = 0
 
+        # Identificação da máquina (para evitar confusão entre múltiplas máquinas)
+        self.machine_name = self._load_machine_name()
+
         # Status automatico a cada 2 horas (7200 segundos)
         self.status_interval = 2 * 60 * 60  # 2 horas em segundos
         self.last_status_time = 0
@@ -78,6 +81,17 @@ class TelegramBot:
         self.migracao_notificada = False  # Para nao notificar mais de uma vez por dia
 
         self.base_url = f"https://api.telegram.org/bot{self.token}"
+
+    def _load_machine_name(self):
+        """Carrega o nome da máquina do machine_config.json"""
+        try:
+            config_file = os.path.join(BASE_DIR, 'machine_config.json')
+            if os.path.exists(config_file):
+                with open(config_file, 'r') as f:
+                    return json.load(f).get('machine_name', 'Desconhecida')
+        except:
+            pass
+        return 'Desconhecida'
 
     def load_config(self):
         try:
@@ -327,6 +341,7 @@ class TelegramBot:
 
         msg = f"""
 <b>📊 STATUS MARTINGALE V2</b>
+🖥️ <b>Máquina: {self.machine_name}</b>
 
 <b>💰 Financeiro:</b>
   Deposito: R$ {deposito:.2f}
@@ -835,6 +850,7 @@ Boa sorte hoje!"""
 
             msg = f"""
 <b>📊 DUAL ACCOUNT STATUS</b>
+🖥️ <b>Máquina: {self.machine_name}</b>
 
 <b>💰 Sessao Principal:</b>
   Deposito: R$ {p['deposito']:.2f}
@@ -900,6 +916,7 @@ Boa sorte hoje!"""
 
                 msg = f"""
 🔄 <b>MIGRACAO NS9 → NS10</b>
+🖥️ <b>Máquina: {self.machine_name}</b>
 
 Conta A atingiu meta de +{conta_a['meta_migracao_pct']:.1f}% e migrou!
 
@@ -973,6 +990,7 @@ Amanha volta para NS9 automaticamente.
 
                 msg = f"""
 🎉 <b>MARCO {marco_atual}% ATINGIDO!</b>
+🖥️ <b>Máquina: {self.machine_name}</b>
 
 <b>💰 Lucro acumulado: {lucro_pct:.1f}%</b>
   Deposito: R$ {deposito:.2f}
@@ -1029,7 +1047,8 @@ Amanha volta para NS9 automaticamente.
 
         # Enviar mensagem de inicio se tiver chat_id
         if self.chat_id:
-            msg = """🟢 <b>Bot Telegram conectado!</b>
+            msg = f"""🟢 <b>Bot Telegram conectado!</b>
+🖥️ <b>Máquina: {self.machine_name}</b>
 
 🚀 <b>Estrategia [7,7,6] ativa</b>
 📊 Status automatico: a cada 2h
@@ -1068,7 +1087,7 @@ Use /status para ver agora."""
                 time.sleep(5)
 
         if self.chat_id:
-            self.send_message("🔴 <b>Bot Telegram desconectado.</b>")
+            self.send_message(f"🔴 <b>Bot Telegram desconectado.</b>\n🖥️ Máquina: {self.machine_name}")
 
 
 def main():

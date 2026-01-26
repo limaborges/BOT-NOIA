@@ -307,9 +307,9 @@ NIVEIS_SEGURANCA = {
 # ALVOS PARA TODAS AS ESTRATEGIAS
 # ============================================================
 
-ALVO_LUCRO = 1.99       # T1-T4: geracao de lucro
+ALVO_LUCRO = 2.00       # T1-T4: geracao de lucro
 ALVO_SEGURANCA = 1.25   # Slot de seguranca
-ALVO_ZERAR = 1.99       # T6+ (exceto ultima): tentar zerar
+ALVO_ZERAR = 2.00       # T6+ (exceto ultima): tentar zerar
 ALVO_T6_NS6 = 2.50      # T6 NS6: slot principal @ 2.50x
 
 # ============================================================
