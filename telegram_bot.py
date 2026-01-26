@@ -57,6 +57,7 @@ RESERVA_FILE = os.path.join(BASE_DIR, 'reserva_state.json')
 class TelegramBot:
     def __init__(self):
         self.config = self.load_config()
+        self.enabled = self.config.get('enabled', True)  # Habilitado por padrao
         self.token = self.config.get('token')
         self.chat_id = self.config.get('chat_id')
         self.authorized_users = self.config.get('authorized_users', [])
@@ -1000,13 +1001,24 @@ Amanha volta para NS9 automaticamente.
 
     def run(self, silent=False):
         """Loop principal do bot"""
+        # Verificar se telegram esta habilitado
+        if not self.enabled:
+            if not silent:
+                print("[TELEGRAM] Desabilitado via config (enabled: false)")
+            return
+
+        if not self.token:
+            if not silent:
+                print("[TELEGRAM] Token nao configurado - telegram_config.json ausente ou invalido")
+            return
+
         self.running = True
         self.last_status_time = time.time()  # Iniciar contagem
         self.last_lucro_check = time.time()  # Iniciar contagem de lucro
 
         if not silent:
             print("="*50)
-            print("TELEGRAM BOT - MartingaleV2 [7,7,6]")
+            print("TELEGRAM BOT - MartingaleV2")
             print("="*50)
             print(f"Bot iniciado!")
             print(f"Chat ID: {self.chat_id or 'Aguardando primeira mensagem...'}")

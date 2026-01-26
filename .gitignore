@@ -45,6 +45,8 @@ compartilhado/
 *.txt
 *.md
 !SETUP_WINDOWS.md
+!GIT_WORKFLOW.md
+!TELEGRAM_CONFIG.md
 *.png
 !templates_matching/*.png
 *.jpg
