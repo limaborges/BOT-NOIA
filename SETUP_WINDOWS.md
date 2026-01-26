@@ -48,13 +48,37 @@ Esses templates devem ser capturados da tela do jogo na resolução específica 
 
 ---
 
-## 4. Arquivos de Estado (Não versionados)
+## 4. Arquivos de Configuração da Máquina (Não versionados)
 
 Estes arquivos são específicos de cada máquina e não vão pro Git:
 
 - `session_state.json` - estado da sessão atual
 - `reserva_state.json` - estado da reserva (deve estar zerado para G6_NS9/G6_NS10)
 - `telegram_config.json` - configuração do Telegram
+- `sync_config.json` - configuração de sync dual account
+- `machine_config.json` - configuração da máquina (navegador, etc)
+
+### Configuração do Navegador (machine_config.json)
+
+Crie o arquivo `machine_config.json`:
+
+**Para Firefox:**
+```json
+{
+  "browser": "firefox",
+  "machine_name": "Windows Dual"
+}
+```
+
+**Para Chrome:**
+```json
+{
+  "browser": "chrome",
+  "machine_name": "Windows Isolada"
+}
+```
+
+Se o arquivo não existir, o padrão é Firefox.
 
 Se `reserva_state.json` existir com valores, zere-o:
 ```json

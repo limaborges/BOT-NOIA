@@ -18,8 +18,13 @@ from datetime import datetime, timedelta
 from typing import Optional, Callable
 from colorama import Fore, init
 from dataclasses import dataclass
+import platform
 
 init(autoreset=True)
+
+# Detectar sistema operacional
+IS_LINUX = platform.system() == 'Linux'
+IS_WINDOWS = platform.system() == 'Windows'
 
 @dataclass
 class RefreshEvent:
@@ -30,9 +35,9 @@ class RefreshEvent:
     success: bool = True
 
 class RefreshManager:
-    """Gerenciador de refresh automático F5 + Restart Firefox"""
+    """Gerenciador de refresh automático F5 + Restart Browser (Firefox/Chrome)"""
 
-    def __init__(self):
+    def __init__(self, browser: str = 'firefox'):
         # Configurações principais
         self.auto_refresh_timeout = 133  # 133 segundos sem explosões (para multiplicador girando)
         self.black_screen_timeout = 15   # 15 segundos de tela preta ou sem atividade
@@ -40,7 +45,10 @@ class RefreshManager:
         self.monitoring_enabled = False
         self.last_explosion_time = datetime.now()
 
-        # Restart Firefox preventivo (RAM) - a cada 6 horas
+        # Configuração do navegador (firefox ou chrome)
+        self.browser = browser.lower()
+
+        # Restart Browser preventivo (RAM) - a cada 6 horas
         self.preventive_restart_interval = 6 * 60 * 60  # 6 horas
         self.last_restart_time = datetime.now()
         self.preventive_restart_pending = False
@@ -251,63 +259,150 @@ class RefreshManager:
         """Força refresh F5 manual"""
         return self.execute_refresh(reason, manual=True)
 
-    # ==================== FIREFOX RESTART (PREVENTIVO RAM) ====================
-    def execute_firefox_restart(self, reason: str = "Preventivo RAM") -> RefreshEvent:
-        """Fecha e reabre Firefox - para liberar RAM (a cada 6h)"""
-        try:
-            timestamp = datetime.now()
+    # ==================== BROWSER RESTART (PREVENTIVO RAM) ====================
+    def _kill_browser(self) -> bool:
+        """Fecha o navegador (Firefox ou Chrome) - cross-platform"""
+        browser_name = self.browser.capitalize()
 
-            print(f"\n{Fore.YELLOW}{'='*50}")
-            print(f"{Fore.YELLOW}EXECUTANDO RESTART DO FIREFOX")
-            print(f"{Fore.WHITE}Motivo: {reason}")
-            print(f"{Fore.YELLOW}{'='*50}")
+        if IS_LINUX:
+            # Linux: usar pkill
+            process_name = 'firefox' if self.browser == 'firefox' else 'chrome'
+            try:
+                result = subprocess.run(['pkill', '-f', process_name], capture_output=True, timeout=10)
+                if result.returncode == 0:
+                    print(f"{Fore.GREEN}{browser_name} fechado com sucesso (Linux)")
+                    return True
+                else:
+                    print(f"{Fore.YELLOW}{browser_name} pode não estar aberto")
+                    return True  # Continuar mesmo assim
+            except Exception as e:
+                print(f"{Fore.YELLOW}⚠️ Aviso ao fechar {browser_name}: {e}")
+                return False
 
-            # 1. Fechar Firefox completamente
-            print(f"{Fore.CYAN}Fechando Firefox...")
+        elif IS_WINDOWS:
+            # Windows: usar taskkill
+            process_name = 'firefox.exe' if self.browser == 'firefox' else 'chrome.exe'
             try:
                 result = subprocess.run(
-                    ['C:\\Windows\\System32\\taskkill.exe', '/IM', 'firefox.exe', '/F'],
+                    ['taskkill', '/IM', process_name, '/F'],
                     capture_output=True, timeout=10
                 )
                 if result.returncode == 0:
-                    print(f"{Fore.GREEN}Firefox fechado com sucesso")
+                    print(f"{Fore.GREEN}{browser_name} fechado com sucesso (Windows)")
+                    return True
                 else:
-                    print(f"{Fore.YELLOW}Firefox pode não estar aberto")
+                    print(f"{Fore.YELLOW}{browser_name} pode não estar aberto")
+                    return True
             except Exception as e:
-                print(f"{Fore.YELLOW}⚠️ Aviso ao fechar: {e}")
+                print(f"{Fore.YELLOW}⚠️ Aviso ao fechar {browser_name}: {e}")
+                return False
 
-            # 2. Esperar Firefox fechar e liberar memória
-            print(f"{Fore.CYAN}Aguardando liberação de memória (5s)...")
-            time.sleep(5)
+        return False
 
-            # 3. Reabrir Firefox na URL do jogo
-            print(f"{Fore.CYAN}Abrindo Firefox na página do jogo...")
+    def _open_browser(self) -> bool:
+        """Abre o navegador na URL do jogo - cross-platform"""
+        browser_name = self.browser.capitalize()
+
+        if IS_LINUX:
+            # Linux: tentar comando direto, depois xdg-open
+            if self.browser == 'firefox':
+                commands = [
+                    ['firefox', self.game_url],
+                    ['firefox-esr', self.game_url],
+                    ['/usr/bin/firefox', self.game_url],
+                ]
+            else:  # chrome
+                commands = [
+                    ['google-chrome', self.game_url],
+                    ['google-chrome-stable', self.game_url],
+                    ['chromium', self.game_url],
+                    ['chromium-browser', self.game_url],
+                ]
+
+            for cmd in commands:
+                try:
+                    subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    print(f"{Fore.GREEN}{browser_name} aberto: {cmd[0]} (Linux)")
+                    return True
+                except FileNotFoundError:
+                    continue
+
+            # Fallback: xdg-open
             try:
-                firefox_paths = [
+                subprocess.Popen(['xdg-open', self.game_url])
+                print(f"{Fore.GREEN}Navegador aberto via xdg-open (Linux)")
+                return True
+            except Exception as e:
+                print(f"{Fore.RED}❌ Erro ao abrir navegador no Linux: {e}")
+                return False
+
+        elif IS_WINDOWS:
+            if self.browser == 'firefox':
+                paths = [
                     r'C:\Program Files\Mozilla Firefox\firefox.exe',
                     r'C:\Program Files (x86)\Mozilla Firefox\firefox.exe',
                 ]
-                firefox_opened = False
-                for firefox_path in firefox_paths:
-                    if os.path.exists(firefox_path):
-                        subprocess.Popen([firefox_path, self.game_url])
-                        firefox_opened = True
-                        print(f"{Fore.GREEN}Firefox aberto: {firefox_path}")
-                        break
+            else:  # chrome
+                paths = [
+                    r'C:\Program Files\Google\Chrome\Application\chrome.exe',
+                    r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+                    os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe'),
+                ]
 
-                if not firefox_opened:
-                    print(f"{Fore.YELLOW}Usando método alternativo...")
-                    os.startfile(self.game_url)
-            except Exception as e:
-                print(f"{Fore.YELLOW}Tentando método alternativo...")
+            for browser_path in paths:
+                if os.path.exists(browser_path):
+                    try:
+                        subprocess.Popen([browser_path, self.game_url])
+                        print(f"{Fore.GREEN}{browser_name} aberto: {browser_path}")
+                        return True
+                    except Exception:
+                        continue
+
+            # Fallback: os.startfile (abre no navegador padrão)
+            try:
                 os.startfile(self.game_url)
+                print(f"{Fore.GREEN}URL aberta no navegador padrão (Windows)")
+                return True
+            except Exception as e:
+                print(f"{Fore.RED}❌ Erro ao abrir navegador no Windows: {e}")
+                return False
+
+        return False
+
+    def execute_firefox_restart(self, reason: str = "Preventivo RAM") -> RefreshEvent:
+        """Fecha e reabre navegador - para liberar RAM (a cada 6h)"""
+        return self.execute_browser_restart(reason)
+
+    def execute_browser_restart(self, reason: str = "Preventivo RAM") -> RefreshEvent:
+        """Fecha e reabre navegador (Firefox/Chrome) - para liberar RAM (a cada 6h)"""
+        browser_name = self.browser.capitalize()
+        try:
+            timestamp = datetime.now()
+            os_name = "Linux" if IS_LINUX else "Windows"
+
+            print(f"\n{Fore.YELLOW}{'='*50}")
+            print(f"{Fore.YELLOW}EXECUTANDO RESTART DO {browser_name.upper()} ({os_name})")
+            print(f"{Fore.WHITE}Motivo: {reason}")
+            print(f"{Fore.YELLOW}{'='*50}")
+
+            # 1. Fechar navegador
+            print(f"{Fore.CYAN}Fechando {browser_name}...")
+            self._kill_browser()
+
+            # 2. Esperar fechar e liberar memória
+            print(f"{Fore.CYAN}Aguardando liberação de memória (5s)...")
+            time.sleep(5)
+
+            # 3. Reabrir navegador na URL do jogo
+            print(f"{Fore.CYAN}Abrindo {browser_name} na página do jogo...")
+            self._open_browser()
 
             # 4. Aguardar carregar página
             print(f"{Fore.CYAN}Aguardando página carregar (12s)...")
             time.sleep(12)
 
             # Atualizar estatísticas
-            self.stats['firefox_restarts'] += 1
+            self.stats['firefox_restarts'] += 1  # Manter nome por compatibilidade
             self.stats['last_refresh'] = timestamp
 
             # Criar evento
@@ -328,7 +423,7 @@ class RefreshManager:
             self.preventive_restart_pending = False
             self.balance_fail_count = 0
 
-            print(f"{Fore.GREEN}✅ Firefox reiniciado com sucesso!")
+            print(f"{Fore.GREEN}✅ {browser_name} reiniciado com sucesso!")
 
             # Callback
             if self.on_refresh_callback:
@@ -340,7 +435,7 @@ class RefreshManager:
             return event
 
         except Exception as e:
-            print(f"{Fore.RED}❌ Erro ao reiniciar Firefox: {e}")
+            print(f"{Fore.RED}❌ Erro ao reiniciar {browser_name}: {e}")
 
             event = RefreshEvent(
                 timestamp=datetime.now(),

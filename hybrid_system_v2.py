@@ -418,7 +418,18 @@ class HybridSystemV2:
         self.session = SessionManager(existing_session_id=existing_session_id)
 
         # ===== AUTO-REFRESH =====
-        self.refresh_manager = RefreshManager()
+        # Carregar configuração de máquina (browser, etc)
+        browser = 'firefox'  # Padrão
+        machine_config_path = os.path.join(os.path.dirname(__file__), 'machine_config.json')
+        if os.path.exists(machine_config_path):
+            try:
+                with open(machine_config_path, 'r') as f:
+                    machine_config = json.load(f)
+                    browser = machine_config.get('browser', 'firefox')
+                    self._log(f"{Fore.CYAN}Navegador configurado: {browser}")
+            except Exception as e:
+                self._log(f"{Fore.YELLOW}Aviso ao ler machine_config.json: {e}")
+        self.refresh_manager = RefreshManager(browser=browser)
         self.setup_refresh_callbacks()
 
         # ===== ESTADO DO SISTEMA =====

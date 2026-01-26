@@ -57,6 +57,7 @@ compartilhado/
 # Config específico de máquina
 telegram_config.json
 sync_config.json
+machine_config.json
 
 # Arquivos Windows
 *.bat
