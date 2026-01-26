@@ -55,3 +55,30 @@ Criar arquivo sync_config.json na pasta do bot:
 Se esta máquina opera ISOLADA (independente):
 NÃO criar o arquivo sync_config.json.
 Sem o arquivo, o sync fica desabilitado automaticamente.
+
+=======================================
+CONFIGURAÇÃO DO NAVEGADOR (IMPORTANTE!)
+=======================================
+
+O sistema de refresh automático precisa saber qual navegador está sendo usado.
+Criar arquivo machine_config.json na pasta do bot:
+
+Se usa FIREFOX:
+{
+  "browser": "firefox",
+  "machine_name": "Windows Dual"
+}
+
+Se usa CHROME:
+{
+  "browser": "chrome",
+  "machine_name": "Windows Isolada"
+}
+
+ATENÇÃO:
+- Linux (AGRESSIVA) = Firefox
+- Windows Dual (CONSERVADORA) = Firefox
+- Windows Isolada = Chrome
+
+Se o arquivo não existir, o padrão é Firefox.
+A máquina que usa Chrome PRECISA criar este arquivo com "browser": "chrome".
