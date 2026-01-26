@@ -1689,6 +1689,8 @@ class HybridSystemV2:
 
     def _alertar_gatilho_anomalo(self, qtd_mults: int, multiplicadores: list):
         """Envia alerta URGENTE via Telegram quando gatilho dispara fora de 6"""
+        if not self._telegram_enabled():
+            return
         try:
             import requests
             config_file = os.path.join(os.path.dirname(__file__), 'telegram_config.json')
@@ -1817,6 +1819,9 @@ class HybridSystemV2:
 
     def iniciar_telegram_bot(self):
         """Inicia o bot do Telegram em thread separada"""
+        if not self._telegram_enabled():
+            self._log(f"{Fore.YELLOW}Telegram desabilitado nesta máquina")
+            return
         try:
             from telegram_bot import TelegramBot
             self.telegram_bot = TelegramBot()
