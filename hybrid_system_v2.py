@@ -578,8 +578,22 @@ class HybridSystemV2:
         except:
             pass
 
+    def _telegram_enabled(self) -> bool:
+        """Verifica se Telegram está habilitado nesta máquina"""
+        try:
+            config_file = os.path.join(os.path.dirname(__file__), 'telegram_config.json')
+            if os.path.exists(config_file):
+                with open(config_file, 'r') as f:
+                    tg_config = json.load(f)
+                return tg_config.get('enabled', True) and tg_config.get('token')
+            return False
+        except:
+            return False
+
     def _enviar_confirmacao_refresh(self, multiplicador: float):
         """Envia confirmação via Telegram que o bot voltou após refresh"""
+        if not self._telegram_enabled():
+            return
         try:
             import requests
             config_file = os.path.join(os.path.dirname(__file__), 'telegram_config.json')
@@ -632,27 +646,28 @@ class HybridSystemV2:
             except Exception as e:
                 self._log(f"{Fore.RED}Erro ao logar refresh: {e}")
 
-            # Notificar via Telegram
-            try:
-                import requests
-                config_file = os.path.join(os.path.dirname(__file__), 'telegram_config.json')
-                if os.path.exists(config_file):
-                    with open(config_file, 'r') as f:
-                        tg_config = json.load(f)
-                    token = tg_config.get('token')
-                    chat_id = tg_config.get('chat_id')
-                    if token and chat_id:
-                        hora = event.timestamp.strftime("%H:%M")
-                        msg = f"🔄 <b>REFRESH EXECUTADO</b>\n\n"
-                        msg += f"⏰ Horário: {hora}\n"
-                        msg += f"📋 Motivo: {event.reason}\n"
-                        msg += f"💰 Saldo: R$ {self.saldo_atual:.2f}\n"
-                        msg += f"✅ Sucesso: {'Sim' if event.success else 'Não'}"
+            # Notificar via Telegram (se habilitado)
+            if self._telegram_enabled():
+                try:
+                    import requests
+                    config_file = os.path.join(os.path.dirname(__file__), 'telegram_config.json')
+                    if os.path.exists(config_file):
+                        with open(config_file, 'r') as f:
+                            tg_config = json.load(f)
+                        token = tg_config.get('token')
+                        chat_id = tg_config.get('chat_id')
+                        if token and chat_id:
+                            hora = event.timestamp.strftime("%H:%M")
+                            msg = f"🔄 <b>REFRESH EXECUTADO</b>\n\n"
+                            msg += f"⏰ Horário: {hora}\n"
+                            msg += f"📋 Motivo: {event.reason}\n"
+                            msg += f"💰 Saldo: R$ {self.saldo_atual:.2f}\n"
+                            msg += f"✅ Sucesso: {'Sim' if event.success else 'Não'}"
 
-                        url = f"https://api.telegram.org/bot{token}/sendMessage"
-                        requests.post(url, data={'chat_id': chat_id, 'text': msg, 'parse_mode': 'HTML'}, timeout=5)
-            except Exception as e:
-                self._log(f"{Fore.YELLOW}Aviso: Não foi possível enviar Telegram: {e}")
+                            url = f"https://api.telegram.org/bot{token}/sendMessage"
+                            requests.post(url, data={'chat_id': chat_id, 'text': msg, 'parse_mode': 'HTML'}, timeout=5)
+                except Exception as e:
+                    self._log(f"{Fore.YELLOW}Aviso: Não foi possível enviar Telegram: {e}")
 
             # Ativar flag para enviar confirmação após primeiro multiplicador
             self.waiting_first_mult_after_refresh = True
@@ -1649,7 +1664,8 @@ class HybridSystemV2:
 
     def _notificar_telegram_restart(self):
         """Envia notificação de restart via Telegram"""
-        # Criar comando para o telegram_bot enviar mensagem
+        if not self._telegram_enabled():
+            return
         try:
             import requests
             config_file = os.path.join(os.path.dirname(__file__), 'telegram_config.json')
