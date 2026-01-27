@@ -10,13 +10,11 @@ Sistema Martingale dual-account com dois modos:
 - NS9: `saldo / 511` (ex: R$2000 → R$3.91)
 - NS10: `saldo / 1023` (ex: R$2000 → R$1.96)
 
-**IMPORTANTE:** O sistema de "Reserva de Lucros" deve estar DESATIVADO para G6_NS9 e G6_NS10. Se aparecer "Reserva de Lucros" na interface ou a aposta base estiver pela metade do esperado, há um bug.
+**IMPORTANTE:** O sistema de "Reserva de Lucros" deve estar DESATIVADO para G6_NS9 e G6_NS10.
 
 ---
 
 ## 1. Clonar o Repositório
-
-Abra o terminal (CMD ou PowerShell) no diretório desejado:
 
 ```bash
 cd C:\Users\SEU_USUARIO
@@ -36,33 +34,79 @@ pip install rich pyautogui opencv-python numpy pillow mss
 
 ---
 
-## 3. Copiar Templates de Dígitos
+## 3. Configuração do Dashboard (NOVO)
 
-A pasta `templates_matching/` contém os PNGs para detecção de multiplicadores via template matching.
+### 3.1 Instalar Tailscale
 
-Se não existir no clone, crie a pasta e adicione os arquivos:
-- `0.png` até `9.png` - dígitos
-- `ponto.png` - ponto decimal
+1. Baixe e instale: https://tailscale.com/download/windows
+2. Abra o Tailscale e faça login com:
+   - **Conta:** drlinnaldoborges@gmail.com (mesma do Linux)
+3. Verifique: ícone Tailscale deve ficar verde (Connected)
 
-Esses templates devem ser capturados da tela do jogo na resolução específica da máquina Windows.
+### 3.2 Configurar sync_client.py
+
+Edite o arquivo `sync_client.py` linha 38:
+
+**Para CONSERVADORA (Windows Dual NS10):**
+```python
+MACHINE_ID = "conservadora"
+```
+
+**Para ISOLADA (Windows Solo NS10):**
+```python
+MACHINE_ID = "isolada"
+```
+
+### 3.3 Executar Sync Client
+
+Abra um terminal separado e execute:
+
+```bash
+python sync_client.py
+```
+
+Saída esperada:
+```
+============================================================
+  SYNC CLIENT - MartingaleV2 Dashboard
+============================================================
+  Maquina: CONSERVADORA
+  Servidor: 192.168.0.200:8080
+  Intervalo: 5s
+============================================================
+
+[21:45:00] OK | Saldo: R$ 2500.00 | Lucro: +2.50% | Uptime: 5h 30min
+```
+
+### 3.4 Rodar Sync em Background (Opcional)
+
+Crie `start_sync.bat`:
+```batch
+@echo off
+start /min python sync_client.py
+```
 
 ---
 
-## 4. Arquivos de Configuração da Máquina (Não versionados)
+## 4. Copiar Templates de Dígitos
 
-Estes arquivos são específicos de cada máquina e não vão pro Git:
+A pasta `templates_matching/` deve conter:
+- `0.png` até `9.png` - dígitos
+- `ponto.png` - ponto decimal
 
-- `session_state.json` - estado da sessão atual
-- `reserva_state.json` - estado da reserva (deve estar zerado para G6_NS9/G6_NS10)
-- `telegram_config.json` - configuração do Telegram
-- `sync_config.json` - configuração de sync dual account
-- `machine_config.json` - configuração da máquina (navegador, etc)
+Capturar da tela do jogo na resolução da máquina Windows.
 
-### Configuração do Navegador (machine_config.json)
+---
 
-Crie o arquivo `machine_config.json`:
+## 5. Arquivos de Configuração (Não versionados)
 
-**Para Firefox:**
+- `session_state.json` - estado da sessão
+- `reserva_state.json` - deve estar zerado para G6
+- `machine_config.json` - configuração do navegador
+
+### machine_config.json
+
+**Firefox:**
 ```json
 {
   "browser": "firefox",
@@ -70,7 +114,7 @@ Crie o arquivo `machine_config.json`:
 }
 ```
 
-**Para Chrome:**
+**Chrome:**
 ```json
 {
   "browser": "chrome",
@@ -78,9 +122,7 @@ Crie o arquivo `machine_config.json`:
 }
 ```
 
-Se o arquivo não existir, o padrão é Firefox.
-
-Se `reserva_state.json` existir com valores, zere-o:
+### reserva_state.json (zerado)
 ```json
 {
   "banca_base": 0,
@@ -95,126 +137,64 @@ Se `reserva_state.json` existir com valores, zere-o:
 
 ---
 
-## 5. Executar o Bot
+## 6. Executar o Bot
 
 ```bash
 venv\Scripts\python start_v2.py
 ```
 
-Selecione o modo **G6_NS10** (conservador) para Windows.
+Selecione o modo **G6_NS10** (conservador).
 
 ---
 
-## 6. Sincronizar Alterações via Git
+## 7. Sincronizar via Git
 
-### Receber alterações do Linux:
 ```bash
-git pull
-```
-
-### Enviar alterações para o Linux:
-```bash
-git add -A
-git commit -m "descrição da alteração"
+git pull                           # Receber alterações
+git add -A && git commit -m "msg"  # Enviar alterações
 git push
 ```
 
 ---
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
-### Aposta base está pela metade do esperado
-- Verifique se `reserva_state.json` está zerado
-- Verifique se o modo é G6_NS9 ou G6_NS10
-- O código em `hybrid_system_v2.py` deve ter G6_NS9/G6_NS10 na lista `modos_sem_reserva`
+### Sync client não conecta
+- Verificar Tailscale conectado (ícone verde)
+- Testar: `ping 192.168.0.200`
+
+### Dashboard não mostra a máquina
+- Verificar sync_client.py rodando
+- Verificar MACHINE_ID correto
+
+### Aposta base pela metade
+- Verificar `reserva_state.json` zerado
+- Verificar modo G6_NS10
 
 ### Template matching não funciona
-- Verifique se a pasta `templates_matching/` existe com os PNGs
-- Os templates devem corresponder à resolução/escala do jogo nesta máquina
-- Pode ser necessário recapturar os templates
-
-### Autonomous betting não executa
-- Verifique se `pyautogui` está instalado
-- No Windows, pode precisar rodar como administrador
-- Verifique as coordenadas do campo de aposta em `config.json`
-
-### Git pede credenciais
-Configure SSH key ou use token:
-```bash
-git remote set-url origin https://SEU_TOKEN@github.com/limaborges/BOT-NOIA.git
-```
+- Recapturar templates na resolução da máquina
 
 ---
 
-## 8. Estrutura de Arquivos Importantes
+## 9. IPs de Referência
 
-```
-MartingaleV2_Build/
-├── start_v2.py              # Ponto de entrada
-├── hybrid_system_v2.py      # Lógica principal do bot
-├── hybrid_ui_rich.py        # Interface terminal
-├── martingale_session.py    # Cálculos Martingale (DIVISOR por nível)
-├── vision_system.py         # Detecção de multiplicadores (template matching)
-├── autonomous_betting_v2.py # Apostas automáticas
-├── templates_matching/      # PNGs dos dígitos (específico da máquina)
-├── config.json              # Coordenadas de tela
-├── session_state.json       # Estado da sessão (não versionado)
-├── reserva_state.json       # Estado da reserva (não versionado)
-└── venv/                    # Ambiente virtual (não versionado)
-```
+| Dispositivo | IP Local | IP Tailscale |
+|-------------|----------|--------------|
+| Linux (Dashboard) | 192.168.0.200 | 100.78.98.1 |
+| iPhone | - | 100.119.74.70 |
+
+**Dashboard:** http://192.168.0.200:8080 (local) ou http://100.78.98.1:8080 (remoto)
 
 ---
 
-## 9. Configuração de Coordenadas
+## 10. Checklist Rápido
 
-O arquivo `config.json` contém as coordenadas de tela. Se o layout do jogo for diferente no Windows, ajuste:
-
-- Região do saldo
-- Região do multiplicador
-- Campo de aposta
-- Botão de apostar
-
-Use `ocr_debug.py` para testar as regiões.
-
----
-
-## 10. Sincronização em Tempo Real (Dual Account)
-
-O sistema permite sincronizar estado entre máquinas para o Telegram unificado.
-
-### Quando HABILITAR (máquina participa do dual):
-
-Crie o arquivo `sync_config.json` na pasta do bot:
-```json
-{
-  "server_ip": "192.168.0.200",
-  "server_port": 5555,
-  "enabled": true
-}
-```
-
-- `server_ip`: IP da máquina Linux que roda o `sync_server.py`
-- `server_port`: Porta do servidor (padrão 5555)
-- `enabled`: true para ativar sincronização
-
-### Quando NÃO HABILITAR (máquina opera isolada):
-
-**Não crie o arquivo `sync_config.json`.**
-
-Sem o arquivo, o sync fica automaticamente desabilitado e a máquina opera de forma independente, sem interferir no sistema dual.
-
-### Resumo:
-
-| Máquina | sync_config.json | Resultado |
-|---------|------------------|-----------|
-| Linux (servidor) | Não precisa | Roda `sync_server.py` |
-| Windows (dual) | **Criar** | Envia dados para Linux |
-| Windows (isolada) | **Não criar** | Opera independente |
-
-### Testar conexão:
-
-```bash
-python sync_client.py
-```
-
-Se configurado corretamente, mostrará "Servidor online!".
+- [ ] Git clone feito
+- [ ] venv criado e dependências instaladas
+- [ ] Tailscale instalado e logado
+- [ ] sync_client.py com MACHINE_ID correto
+- [ ] templates_matching/ com PNGs
+- [ ] machine_config.json criado
+- [ ] Bot rodando (start_v2.py)
+- [ ] Sync client rodando (sync_client.py)
+- [ ] Máquina aparece no dashboard

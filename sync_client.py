@@ -1,110 +1,110 @@
 #!/usr/bin/env python3
 """
-Cliente HTTP para sincronizar estado com o servidor Linux.
-Roda no Windows e envia atualizações para o Linux.
+Sync Client para MartingaleV2 Dashboard
+========================================
+Envia dados da máquina local para o dashboard centralizado no Linux.
 
-USO NO WINDOWS:
-1. Copie este arquivo para a pasta do bot CONSERVADORA
-2. Configure o IP do Linux abaixo
-3. Importe e use as funções para enviar atualizações
+USO NAS MÁQUINAS WINDOWS:
+1. Copie este arquivo para a pasta do bot
+2. Ajuste MACHINE_ID conforme a máquina:
+   - "conservadora" para Windows Dual NS10
+   - "isolada" para Windows Solo NS10
+3. Ajuste DASHBOARD_SERVER com o IP do Linux
+4. Execute: python sync_client.py
 """
 
+import json
+import time
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+
+# Usar urllib (já incluso no Python) ao invés de requests
 import urllib.request
 import urllib.error
-import json
-from datetime import datetime
-from typing import Optional, Dict
 
-# ========== CONFIGURAÇÃO VIA ARQUIVO ==========
-# Crie o arquivo sync_config.json com:
-# {"server_ip": "192.168.0.200", "server_port": 5555, "enabled": true}
-# Se o arquivo não existir, sync fica DESABILITADO
-# ===============================================
+# ============================================================
+# CONFIGURAÇÃO - AJUSTE CONFORME SUA MÁQUINA
+# ============================================================
 
-import os
+# IP do servidor Linux onde o dashboard está rodando
+DASHBOARD_SERVER = "192.168.0.200"
+DASHBOARD_PORT = 8080
 
-SYNC_CONFIG_FILE = os.path.join(os.path.dirname(__file__), "sync_config.json")
-SYNC_ENABLED = False
-LINUX_SERVER_IP = ""
-LINUX_SERVER_PORT = 5555
+# Identificador desta máquina (escolha UM):
+# - "conservadora" para Windows Dual NS10
+# - "isolada" para Windows Solo NS10
+MACHINE_ID = "conservadora"  # <-- AJUSTE AQUI
 
-# Carregar config se existir
-if os.path.exists(SYNC_CONFIG_FILE):
+# Intervalo de envio em segundos
+SYNC_INTERVAL = 5
+
+# Caminho do session_state.json (padrão: mesmo diretório do script)
+SESSION_STATE_PATH = Path(__file__).parent / "session_state.json"
+
+# ============================================================
+# FIM DA CONFIGURAÇÃO
+# ============================================================
+
+def load_session_state():
+    """Carrega o estado da sessão do arquivo JSON."""
+    if not SESSION_STATE_PATH.exists():
+        return None
+
     try:
-        with open(SYNC_CONFIG_FILE, 'r') as f:
-            _config = json.load(f)
-            LINUX_SERVER_IP = _config.get('server_ip', '')
-            LINUX_SERVER_PORT = _config.get('server_port', 5555)
-            SYNC_ENABLED = _config.get('enabled', False) and LINUX_SERVER_IP
-            if SYNC_ENABLED:
-                print(f"[SYNC] Habilitado - servidor: {LINUX_SERVER_IP}:{LINUX_SERVER_PORT}")
+        with open(SESSION_STATE_PATH, 'r', encoding='utf-8') as f:
+            return json.load(f)
     except Exception as e:
-        print(f"[SYNC] Erro ao ler config: {e}")
-        SYNC_ENABLED = False
-else:
-    print("[SYNC] Desabilitado - sync_config.json não encontrado")
-
-BASE_URL = f"http://{LINUX_SERVER_IP}:{LINUX_SERVER_PORT}" if SYNC_ENABLED else ""
+        print(f"[ERRO] Falha ao ler session_state.json: {e}")
+        return None
 
 
-def ping_server() -> bool:
-    """Verifica se o servidor Linux está online"""
-    if not SYNC_ENABLED:
-        return False
-    try:
-        req = urllib.request.urlopen(f"{BASE_URL}/ping", timeout=5)
-        data = json.loads(req.read().decode())
-        return data.get('status') == 'ok'
-    except Exception as e:
-        print(f"[SYNC] Erro ao conectar com Linux: {e}")
-        return False
+def extract_data_from_state(state: dict) -> dict:
+    """Extrai dados relevantes do session_state para enviar ao dashboard."""
 
-
-def enviar_estado_conservadora(
-    saldo_inicial: float,
-    saldo_atual: float,
-    modo: str = "NS10",
-    ciclos_completos: int = 0,
-    ciclo_atual: int = 0,
-    operando: bool = True,
-    info_extra: Optional[Dict] = None
-) -> bool:
-    """
-    Envia o estado atual da conta CONSERVADORA para o servidor Linux.
-
-    Args:
-        saldo_inicial: Saldo inicial do dia
-        saldo_atual: Saldo atual
-        modo: Modo de operação (sempre NS10 para conservadora)
-        ciclos_completos: Número de ciclos completos
-        ciclo_atual: Posição no ciclo atual (0-6 gatilho)
-        operando: Se está operando ou pausado
-        info_extra: Informações adicionais opcionais
-
-    Returns:
-        True se enviou com sucesso, False caso contrário
-    """
-    estado = {
-        'conta': 'CONSERVADORA',
-        'saldo_inicial': saldo_inicial,
-        'saldo_atual': saldo_atual,
-        'modo': modo,
-        'ciclos_completos': ciclos_completos,
-        'ciclo_atual': ciclo_atual,
-        'operando': operando,
-        'lucro_dia': saldo_atual - saldo_inicial,
-        'lucro_percentual': ((saldo_atual / saldo_inicial) - 1) * 100 if saldo_inicial > 0 else 0,
-        'timestamp': datetime.now().isoformat()
+    # Dados básicos
+    data = {
+        "saldo": state.get("saldo_atual", 0),
+        "deposito_inicial": state.get("deposito_inicial", 0),
+        "aposta_base": state.get("aposta_base", 0),
+        "nivel": state.get("nivel_atual", 10),
+        "modo": state.get("config_modo", {}).get("modo", "g6_ns10"),
+        "lucro_para_subir": state.get("config_modo", {}).get("lucro_para_subir", 5.8),
+        "total_rodadas": state.get("total_rodadas", 0),
+        "sessoes_win": state.get("sessoes_win", 0),
+        "sessoes_loss": state.get("sessoes_loss", 0),
+        "uptime_start": state.get("sessao_inicio"),
     }
 
-    if info_extra:
-        estado.update(info_extra)
+    # Último multiplicador
+    ultimo_mult = state.get("ultimo_mult")
+    ultimo_mult_time = state.get("ultimo_mult_time")
+
+    if ultimo_mult:
+        data["last_mult"] = ultimo_mult
+        data["last_mult_time"] = ultimo_mult_time
+
+    # Histórico de saldo
+    historico = state.get("historico_saldo", [])
+    data["historico_saldo"] = historico[-50:] if historico else []
+
+    # Últimos gatilhos
+    gatilhos = state.get("ultimos_gatilhos", [])
+    data["ultimos_gatilhos"] = gatilhos[-10:] if gatilhos else []
+
+    return data
+
+
+def send_to_dashboard(data: dict) -> bool:
+    """Envia dados para o dashboard via HTTP POST usando urllib."""
+    url = f"http://{DASHBOARD_SERVER}:{DASHBOARD_PORT}/api/update/{MACHINE_ID}"
 
     try:
-        data = json.dumps(estado).encode('utf-8')
+        json_data = json.dumps(data).encode('utf-8')
         req = urllib.request.Request(
-            f"{BASE_URL}/update",
-            data=data,
+            url,
+            data=json_data,
             headers={'Content-Type': 'application/json'},
             method='POST'
         )
@@ -112,59 +112,105 @@ def enviar_estado_conservadora(
         result = json.loads(response.read().decode())
 
         if result.get('status') == 'ok':
-            print(f"[SYNC] Estado enviado: R$ {saldo_atual:.2f} ({estado['lucro_percentual']:+.2f}%)")
             return True
         else:
-            print(f"[SYNC] Erro na resposta: {result}")
+            print(f"[ERRO] Servidor retornou: {result}")
             return False
 
     except urllib.error.URLError as e:
-        print(f"[SYNC] Erro de conexão: {e}")
+        print(f"[ERRO] Não foi possível conectar ao dashboard: {e.reason}")
         return False
     except Exception as e:
-        print(f"[SYNC] Erro ao enviar estado: {e}")
+        print(f"[ERRO] Falha ao enviar dados: {e}")
         return False
 
 
-def enviar_atualizacao_simples(saldo_atual: float, saldo_inicial: float = None) -> bool:
-    """
-    Versão simplificada - só precisa do saldo atual.
-    Se saldo_inicial não for informado, usa o último enviado.
-    """
-    # Tenta ler o último estado para pegar o saldo_inicial
-    if saldo_inicial is None:
+def format_timedelta(start_time: str) -> str:
+    """Formata o tempo desde o início como string legível."""
+    if not start_time:
+        return "N/A"
+
+    try:
+        start = datetime.fromisoformat(start_time)
+        delta = datetime.now() - start
+        hours = int(delta.total_seconds() // 3600)
+        minutes = int((delta.total_seconds() % 3600) // 60)
+        return f"{hours}h {minutes}min"
+    except:
+        return "N/A"
+
+
+def main():
+    """Loop principal do sync client."""
+
+    print("=" * 60)
+    print("  SYNC CLIENT - MartingaleV2 Dashboard")
+    print("=" * 60)
+    print(f"  Maquina: {MACHINE_ID.upper()}")
+    print(f"  Servidor: {DASHBOARD_SERVER}:{DASHBOARD_PORT}")
+    print(f"  Intervalo: {SYNC_INTERVAL}s")
+    print("=" * 60)
+    print()
+
+    # Verificar se session_state.json existe
+    if not SESSION_STATE_PATH.exists():
+        print(f"[AVISO] session_state.json nao encontrado em:")
+        print(f"        {SESSION_STATE_PATH}")
+        print(f"        Aguardando criacao do arquivo...")
+
+    consecutive_errors = 0
+    last_success_time = None
+
+    while True:
         try:
-            req = urllib.request.urlopen(f"{BASE_URL}/status", timeout=5)
-            data = json.loads(req.read().decode())
-            saldo_inicial = data.get('saldo_inicial', saldo_atual)
-        except:
-            saldo_inicial = saldo_atual
+            # Carregar estado
+            state = load_session_state()
 
-    return enviar_estado_conservadora(
-        saldo_inicial=saldo_inicial,
-        saldo_atual=saldo_atual
-    )
+            if state is None:
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Aguardando session_state.json...")
+                time.sleep(SYNC_INTERVAL)
+                continue
+
+            # Extrair dados
+            data = extract_data_from_state(state)
+
+            # Enviar para dashboard
+            success = send_to_dashboard(data)
+
+            if success:
+                consecutive_errors = 0
+                last_success_time = datetime.now()
+
+                # Log compacto de sucesso
+                saldo = data.get("saldo", 0)
+                lucro = saldo - data.get("deposito_inicial", saldo)
+                deposito = data.get("deposito_inicial", 0)
+                lucro_pct = (lucro / deposito) * 100 if deposito > 0 else 0
+                uptime = format_timedelta(data.get("uptime_start"))
+
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] OK | "
+                      f"Saldo: R$ {saldo:.2f} | "
+                      f"Lucro: {lucro_pct:+.2f}% | "
+                      f"Uptime: {uptime}")
+            else:
+                consecutive_errors += 1
+
+                if consecutive_errors >= 5:
+                    print(f"[AVISO] {consecutive_errors} erros consecutivos. Verificar conexao.")
+
+                    if consecutive_errors >= 20:
+                        print("[ERRO] Muitos erros consecutivos. Aguardando 30s...")
+                        time.sleep(30)
+
+            time.sleep(SYNC_INTERVAL)
+
+        except KeyboardInterrupt:
+            print("\n[INFO] Sync client encerrado pelo usuario.")
+            break
+        except Exception as e:
+            print(f"[ERRO] Excecao no loop principal: {e}")
+            time.sleep(SYNC_INTERVAL)
 
 
-# ========== EXEMPLO DE USO ==========
-if __name__ == '__main__':
-    print("Testando conexão com servidor Linux...")
-
-    if ping_server():
-        print("Servidor online! Enviando estado de teste...")
-
-        # Exemplo: enviar estado
-        sucesso = enviar_estado_conservadora(
-            saldo_inicial=2000.00,
-            saldo_atual=2050.00,
-            ciclos_completos=5,
-            ciclo_atual=3
-        )
-
-        if sucesso:
-            print("Estado enviado com sucesso!")
-        else:
-            print("Falha ao enviar estado.")
-    else:
-        print("Servidor Linux offline ou inacessível.")
-        print(f"Verifique se o servidor está rodando em {LINUX_SERVER_IP}:{LINUX_SERVER_PORT}")
+if __name__ == "__main__":
+    main()

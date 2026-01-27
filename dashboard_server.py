@@ -1,632 +1,804 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-DASHBOARD SERVER - Servidor HTTP para dashboard visual
-Roda em paralelo ao sistema principal, lendo dados do SQLite e JSON.
+DASHBOARD WEB - Monitoramento Centralizado 3 Máquinas
+Interface elegante com gráficos em tempo real
 """
 
-import json
 import os
-import sqlite3
+import json
+import time
 import threading
 from datetime import datetime, timedelta
-from http.server import HTTPServer, SimpleHTTPRequestHandler
-from typing import Dict, List
-import time
+from flask import Flask, render_template_string, jsonify, request
 
+# Configuração
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DASHBOARD_PORT = 8080
 
-# Fuso horário Brasília (UTC-3)
-# Banco de dados usa UTC, então para exibir em Brasília subtraímos 3 horas
-BRASILIA_OFFSET = timedelta(hours=-3)
+# Estado das máquinas
+machines_state = {
+    'agressiva': {
+        'name': 'AGRESSIVA',
+        'subtitle': 'Linux - NS9/NS10',
+        'color': '#ff6b6b',
+        'status': 'offline',
+        'last_update': None,
+        'last_mult': None,
+        'last_mult_time': None,
+        'saldo': 0,
+        'deposito_inicial': 0,
+        'aposta_base': 0,
+        'nivel': 9,
+        'modo': 'g6_ns9',
+        'lucro_para_subir': 5.8,
+        'sessoes_win': 0,
+        'sessoes_loss': 0,
+        'uptime_start': None,
+        'ultimos_gatilhos': [],
+        'total_rodadas': 0,
+        'historico_saldo': [],  # Para o gráfico
+    },
+    'conservadora': {
+        'name': 'CONSERVADORA',
+        'subtitle': 'Windows Dual - NS10',
+        'color': '#4ecdc4',
+        'status': 'offline',
+        'last_update': None,
+        'last_mult': None,
+        'last_mult_time': None,
+        'saldo': 0,
+        'deposito_inicial': 0,
+        'aposta_base': 0,
+        'nivel': 10,
+        'modo': 'g6_ns10',
+        'sessoes_win': 0,
+        'sessoes_loss': 0,
+        'uptime_start': None,
+        'ultimos_gatilhos': [],
+        'total_rodadas': 0,
+        'historico_saldo': [],
+    },
+    'isolada': {
+        'name': 'ISOLADA',
+        'subtitle': 'Windows Solo - NS10',
+        'color': '#a66cff',
+        'status': 'offline',
+        'last_update': None,
+        'last_mult': None,
+        'last_mult_time': None,
+        'saldo': 0,
+        'deposito_inicial': 0,
+        'aposta_base': 0,
+        'nivel': 10,
+        'modo': 'g6_ns10',
+        'sessoes_win': 0,
+        'sessoes_loss': 0,
+        'uptime_start': None,
+        'ultimos_gatilhos': [],
+        'total_rodadas': 0,
+        'historico_saldo': [],
+    }
+}
 
+# Última distribuição
+ultima_distribuicao = {
+    'timestamp': None,
+    'agressiva': 0,
+    'conservadora': 0,
+}
 
-class DashboardDataProvider:
-    """Provedor de dados para o dashboard"""
+app = Flask(__name__)
 
-    def __init__(self, db_path: str = 'database/bets.db', state_path: str = 'session_state.json',
-                 rounds_db_path: str = 'database/rounds.db'):
-        self.db_path = db_path
-        self.state_path = state_path
-        self.rounds_db_path = rounds_db_path
-        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+def carregar_estado_local():
+    """Carrega estado da máquina local (AGRESSIVA)"""
+    try:
+        state_file = os.path.join(BASE_DIR, 'session_state.json')
+        if os.path.exists(state_file):
+            with open(state_file, 'r') as f:
+                state = json.load(f)
 
-    def now_brasilia(self) -> datetime:
-        """Retorna datetime atual em Brasília"""
-        from datetime import timezone
-        utc_now = datetime.now(timezone.utc)
-        return utc_now + BRASILIA_OFFSET
+            config = state.get('config_modo', {})
+            nivel = state.get('nivel_seguranca', 9)
+            saldo = state.get('saldo_atual', 0)
 
-    def utc_to_brasilia(self, dt: datetime) -> datetime:
-        """Converte UTC para Brasília"""
-        return dt + BRASILIA_OFFSET
+            # Calcular aposta base
+            divisores = {6: 63, 7: 127, 8: 255, 9: 511, 10: 1023}
+            divisor = divisores.get(nivel, 511)
+            aposta_base = saldo / divisor
 
-    def get_sessao_inicio(self) -> str:
-        """Retorna timestamp de início da sessão (para queries no banco UTC)"""
-        state = self.get_session_state()
-        inicio = state.get('inicio_timestamp', '')
-
-        if not inicio:
-            return '1970-01-01 00:00:00'
-
-        # inicio_timestamp está em Brasília, converter para UTC para queries
-        try:
-            brasilia_dt = datetime.strptime(inicio, '%Y-%m-%d %H:%M:%S')
-            utc_dt = brasilia_dt - BRASILIA_OFFSET  # Brasília -> UTC
-            return utc_dt.strftime('%Y-%m-%d %H:%M:%S')
-        except:
-            return inicio
-
-    def get_session_state(self) -> Dict:
-        """Lê o estado atual da sessão"""
-        try:
-            path = os.path.join(self.base_dir, self.state_path)
-            with open(path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            return {}
-
-    def get_reserva_state(self) -> Dict:
-        """Lê o estado da reserva de lucros"""
-        try:
-            path = os.path.join(self.base_dir, 'reserva_state.json')
-            with open(path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            return {}
-
-    def get_ultimos_multiplicadores(self, limit: int = 13) -> List[float]:
-        """Retorna últimos multiplicadores observados pelo OCR (da tabela rounds)"""
-        try:
-            path = os.path.join(self.base_dir, self.rounds_db_path)
-            sessao_inicio = self.get_sessao_inicio()
-            conn = sqlite3.connect(path)
-            cursor = conn.cursor()
-            cursor.execute('''
-                SELECT multiplier FROM rounds
-                WHERE multiplier IS NOT NULL
-                AND timestamp >= ?
-                ORDER BY id DESC LIMIT ?
-            ''', (sessao_inicio, limit))
-            rows = cursor.fetchall()
-            conn.close()
-            return [r[0] for r in reversed(rows)]
-        except Exception as e:
-            # Fallback: tentar do bets.db se rounds.db não existir
-            try:
-                path = os.path.join(self.base_dir, self.db_path)
-                sessao_inicio = self.get_sessao_inicio()
-                conn = sqlite3.connect(path)
-                cursor = conn.cursor()
-                cursor.execute('''
-                    SELECT actual_multiplier FROM bets_executed
-                    WHERE actual_multiplier IS NOT NULL
-                    AND timestamp >= ?
-                    ORDER BY id DESC LIMIT ?
-                ''', (sessao_inicio, limit))
-                rows = cursor.fetchall()
-                conn.close()
-                return [r[0] for r in reversed(rows)]
-            except:
-                return []
-
-    def get_max_streak_baixos(self) -> Dict:
-        """Calcula a maior sequencia consecutiva de multiplicadores baixos (< 2.0x) da sessao"""
-        try:
-            path = os.path.join(self.base_dir, self.rounds_db_path)
-            sessao_inicio = self.get_sessao_inicio()
-            conn = sqlite3.connect(path)
-            cursor = conn.cursor()
-
-            # Buscar todos os multiplicadores da sessao em ordem cronologica
-            cursor.execute('''
-                SELECT multiplier FROM rounds
-                WHERE multiplier IS NOT NULL
-                AND timestamp >= ?
-                ORDER BY id ASC
-            ''', (sessao_inicio,))
-            rows = cursor.fetchall()
-            conn.close()
-
-            if not rows:
-                return {'atual': 0, 'max': 0}
-
-            # Calcular streaks
-            streak_atual = 0
-            streak_max = 0
-
-            for (mult,) in rows:
-                if mult < 2.0:  # Multiplicador baixo
-                    streak_atual += 1
-                    if streak_atual > streak_max:
-                        streak_max = streak_atual
-                else:
-                    streak_atual = 0
-
-            return {
-                'atual': streak_atual,  # Streak atual (em andamento)
-                'max': streak_max       # Maior streak da sessao
-            }
-
-        except Exception as e:
-            return {'atual': 0, 'max': 0}
-
-    def get_session_info(self) -> Dict:
-        """Retorna informações completas da sessão"""
-        try:
-            state = self.get_session_state()
-            inicio_str = self.get_sessao_inicio()  # Usa a lógica corrigida (UTC para queries)
-
-            # Calcular uptime
-            # inicio_timestamp está em horário local, convertemos para Brasília
-            uptime_str = '--:--:--'
-            inicio_original = state.get('inicio_timestamp', '')
-            if inicio_original:
-                try:
-                    # Parse inicio (local time) e converter para Brasília
-                    inicio_local = datetime.strptime(inicio_original, '%Y-%m-%d %H:%M:%S')
-                    # Ajuste: local (UTC-4) para Brasília (UTC-3) = +1 hora
-                    inicio_brasilia = inicio_local + timedelta(hours=1)
-                    agora_brasilia = self.now_brasilia()
-                    # Remover timezone info para subtrair
-                    agora_naive = agora_brasilia.replace(tzinfo=None)
-                    delta = agora_naive - inicio_brasilia
-                    # Evitar uptime negativo
-                    if delta.total_seconds() < 0:
-                        delta = timedelta(seconds=0)
-                    hours, remainder = divmod(int(delta.total_seconds()), 3600)
-                    minutes, seconds = divmod(remainder, 60)
-                    uptime_str = f'{hours:02d}:{minutes:02d}:{seconds:02d}'
-                except:
-                    pass
-
-            # Contar rounds na sessão
-            total_rounds = 0
-            ultimo_round = ''
-            try:
-                path = os.path.join(self.base_dir, self.rounds_db_path)
-                conn = sqlite3.connect(path)
-                cursor = conn.cursor()
-                cursor.execute('''
-                    SELECT COUNT(*), MAX(timestamp) FROM rounds
-                    WHERE timestamp >= ?
-                ''', (inicio_str or '1970-01-01',))
-                row = cursor.fetchone()
-                conn.close()
-                total_rounds = row[0] or 0
-                ultimo_round = row[1] or ''
-            except:
-                pass
-
-            # Ajustar último round de UTC para Brasília
-            ultimo_round_ajustado = ''
-            if ultimo_round:
-                try:
-                    dt = datetime.strptime(ultimo_round, '%Y-%m-%d %H:%M:%S')
-                    dt_brasilia = self.utc_to_brasilia(dt)
-                    ultimo_round_ajustado = dt_brasilia.strftime('%H:%M:%S')
-                except:
-                    ultimo_round_ajustado = ultimo_round[11:19] if len(ultimo_round) > 11 else ''
-
-            # Max streak de baixos
-            streak_data = self.get_max_streak_baixos()
-
-            return {
-                'sessao_id': state.get('sessao_id', ''),
-                'inicio': inicio_str,
-                'uptime': uptime_str,
-                'total_rounds': total_rounds,
-                'ultimo_round': ultimo_round_ajustado,
-                'perfil': state.get('perfil_ativo', ''),
-                'nivel': state.get('nivel_seguranca', 6),
-                'streak_baixos': streak_data.get('atual', 0),
-                'max_streak_baixos': streak_data.get('max', 0),
-            }
-        except:
-            return {
-                'sessao_id': '',
-                'inicio': '',
-                'uptime': '--:--:--',
-                'total_rounds': 0,
-                'ultimo_round': '',
-                'perfil': '',
-                'nivel': 6,
-                'streak_baixos': 0,
-                'max_streak_baixos': 0,
-            }
-
-    def get_apostas_recentes(self, limit: int = 20) -> List[Dict]:
-        """Retorna apostas recentes da sessão atual"""
-        try:
-            path = os.path.join(self.base_dir, self.db_path)
-            sessao_inicio = self.get_sessao_inicio()
-            conn = sqlite3.connect(path)
-            cursor = conn.cursor()
-            cursor.execute('''
-                SELECT timestamp, bet_amount, target_multiplier, actual_multiplier,
-                       result, profit_loss, bet_slot
-                FROM bets_executed
-                WHERE timestamp >= ?
-                ORDER BY id DESC LIMIT ?
-            ''', (sessao_inicio, limit))
-            rows = cursor.fetchall()
-            conn.close()
-
-            apostas = []
-            for r in rows:
-                apostas.append({
-                    'timestamp': r[0][:19] if r[0] else '',
-                    'valor': r[1] or 0,
-                    'alvo': r[2] or 0,
-                    'multiplicador': r[3] or 0,
-                    'resultado': r[4] or '',
-                    'lucro': r[5] or 0,
-                    'slot': r[6] or 1
-                })
-            return apostas
-        except:
-            return []
-
-    def get_triggers_por_hora(self, horas: int = 6) -> Dict[str, int]:
-        """Retorna contagem de triggers por hora da sessão atual"""
-        try:
-            path = os.path.join(self.base_dir, self.db_path)
-            sessao_inicio = self.get_sessao_inicio()
-            conn = sqlite3.connect(path)
-            cursor = conn.cursor()
-
-            cursor.execute('''
-                SELECT strftime('%H', timestamp) as hora, COUNT(*) as qtd
-                FROM recommendations
-                WHERE pattern_detected LIKE 'MARTINGALE%'
-                AND timestamp >= ?
-                GROUP BY strftime('%H', timestamp)
-                ORDER BY hora
-            ''', (sessao_inicio,))
-            rows = cursor.fetchall()
-            conn.close()
-
-            return {f"{r[0]}h": r[1] for r in rows}
-        except:
-            return {}
-
-    def get_evolucao_banca(self) -> List[Dict]:
-        """Retorna evolução da banca da sessão atual (TODAS as apostas)"""
-        try:
-            path = os.path.join(self.base_dir, self.db_path)
-            sessao_inicio = self.get_sessao_inicio()
-            conn = sqlite3.connect(path)
-            cursor = conn.cursor()
-            # Join com recommendations para pegar o reason (contém tentativa)
-            # Sem LIMIT - busca TODAS as apostas da sessão
-            cursor.execute('''
-                SELECT b.timestamp, b.working_balance_after, b.result, b.profit_loss,
-                       r.reason, b.bet_amount, b.target_multiplier, b.actual_multiplier
-                FROM bets_executed b
-                LEFT JOIN recommendations r ON b.recommendation_id = r.id
-                WHERE b.working_balance_after IS NOT NULL
-                AND b.timestamp >= ?
-                ORDER BY b.id ASC
-            ''', (sessao_inicio,))
-            rows = cursor.fetchall()
-            conn.close()
-
-            evolucao = []
-            for r in rows:  # Já está em ordem ASC, não precisa reverter
-                # Extrair tentativa do reason (formato: "Sessao WIN [WIN] em T1")
-                reason = r[4] or ''
-                tentativa = ''
-                import re
-                match = re.search(r'T(\d+)', reason)
-                if match:
-                    tentativa = f"T{match.group(1)}"
-
-                evolucao.append({
-                    'timestamp': r[0][11:16] if r[0] else '',  # HH:MM
-                    'saldo': r[1] or 0,
-                    'resultado': r[2] or '',
-                    'lucro': r[3] or 0,
-                    'tentativa': tentativa,
-                    'valor': r[5] or 0,
-                    'alvo': r[6] or 0,
-                    'mult_real': r[7] or 0
-                })
-            return evolucao
-        except:
-            return []
-
-    def get_performance(self) -> Dict:
-        """Retorna estatísticas de performance da sessão atual"""
-        try:
-            path = os.path.join(self.base_dir, self.db_path)
-            sessao_inicio = self.get_sessao_inicio()
-            conn = sqlite3.connect(path)
-            cursor = conn.cursor()
-
-            # Wins e losses da sessão atual
-            cursor.execute('''
-                SELECT result, COUNT(*) FROM bets_executed
-                WHERE timestamp >= ?
-                GROUP BY result
-            ''', (sessao_inicio,))
-            rows = cursor.fetchall()
-            conn.close()
-
-            perf = {'wins': 0, 'losses': 0}
-            for r in rows:
-                if r[0] == 'WIN':
-                    perf['wins'] = r[1]
-                elif r[0] == 'LOSS':
-                    perf['losses'] = r[1]
-
-            return perf
-        except:
-            return {'wins': 0, 'losses': 0}
-
-    def get_wins_por_tentativa(self) -> Dict[str, int]:
-        """Retorna contagem de wins por tentativa (T1-T6+) da sessão atual
-
-        Infere o número da tentativa pela sequência de apostas:
-        - Uma sequência de LOSS seguida de WIN indica em qual tentativa ganhou
-        - LOSS, LOSS, WIN = ganhou em T3
-        """
-        try:
-            path = os.path.join(self.base_dir, self.db_path)
-            sessao_inicio = self.get_sessao_inicio()
-            conn = sqlite3.connect(path)
-            cursor = conn.cursor()
-
-            # Buscar todas as apostas em ordem cronológica
-            cursor.execute('''
-                SELECT result, timestamp FROM bets_executed
-                WHERE timestamp >= ?
-                ORDER BY id ASC
-            ''', (sessao_inicio,))
-            rows = cursor.fetchall()
-            conn.close()
-
-            # Inicializar contadores
-            tentativas = {'T1': 0, 'T2': 0, 'T3': 0, 'T4': 0, 'T5': 0, 'T6+': 0}
-
-            # Contar tentativas baseado na sequência
-            current_attempt = 1
-            for result, _ in rows:
-                if result == 'WIN':
-                    # Registrar em qual tentativa ganhou
-                    if current_attempt <= 5:
-                        tentativas[f'T{current_attempt}'] += 1
-                    else:
-                        tentativas['T6+'] += 1
-                    current_attempt = 1  # Reset para próxima sessão
-                elif result == 'LOSS':
-                    current_attempt += 1  # Incrementar tentativa
-
-            return tentativas
-        except:
-            return {'T1': 0, 'T2': 0, 'T3': 0, 'T4': 0, 'T5': 0, 'T6+': 0}
-
-    def get_estatisticas_validacao(self) -> Dict:
-        """Retorna estatísticas esperadas vs reais para validação
-
-        Usa a mesma lógica de inferir tentativas pela sequência LOSS/WIN
-        """
-        try:
-            # Reutilizar a contagem de tentativas
-            tentativas = self.get_wins_por_tentativa()
-
-            # Total de sessões completas (wins)
-            total_sessions = sum(tentativas.values())
-
-            if total_sessions == 0:
-                return {'items': [], 'total_triggers': 0}
-
-            # Valores esperados (baseados em 99k rodadas)
-            esperados = {
-                'T1': 50.0,   # 50% resolve em T1
-                'T2': 25.0,   # 25% resolve em T2
-                'T3': 12.5,   # 12.5% resolve em T3
-                'T4': 6.25,   # 6.25% resolve em T4
-                'T5': 3.13,   # 3.13% resolve em T5
-                'T6+': 3.12,  # 3.12% vai para T6+
-            }
-
-            items = []
-            for label in ['T1', 'T2', 'T3', 'T4', 'T5', 'T6+']:
-                wins = tentativas.get(label, 0)
-                real_pct = (wins / total_sessions * 100) if total_sessions > 0 else 0
-                esperado_pct = esperados.get(label, 0)
-
-                items.append({
-                    'label': label,
-                    'esperado': esperado_pct,
-                    'real': round(real_pct, 1),
-                    'count': wins,
-                    'status': 'ok' if abs(real_pct - esperado_pct) < 15 else ('high' if real_pct > esperado_pct else 'low')
+            # Extrair últimos gatilhos do histórico
+            historico = state.get('historico_apostas', [])
+            ultimos = []
+            for h in historico[-10:]:
+                ultimos.append({
+                    'tentativa': h.get('tentativa', 1),
+                    'resultado': 'WIN' if h.get('ganhou', False) else 'LOSS',
+                    'horario': h.get('horario', ''),
+                    'mult': h.get('multiplicador_real', 0)
                 })
 
-            return {
-                'items': items,
-                'total_triggers': total_sessions,
-                'total_losses': 0  # Será calculado quando houver losses completos
-            }
-        except Exception as e:
-            return {'items': [], 'total_triggers': 0, 'error': str(e)}
+            # Histórico de saldo para gráfico (baseado nas apostas)
+            historico_saldo = []
+            saldo_acumulado = state.get('deposito_inicial', 0)
+            for h in historico:
+                resultado = h.get('resultado', 0)
+                saldo_acumulado += resultado
+                historico_saldo.append({
+                    'horario': h.get('horario', ''),
+                    'saldo': saldo_acumulado
+                })
 
-    def get_dashboard_data(self) -> Dict:
-        """Retorna todos os dados para o dashboard"""
-        state = self.get_session_state()
-        reserva = self.get_reserva_state()
-        perf = self.get_performance()
-        session_info = self.get_session_info()
+            # Pegar último multiplicador
+            last_mult = None
+            last_mult_time = None
+            if historico:
+                last = historico[-1]
+                last_mult = last.get('multiplicador_real')
+                last_mult_time = last.get('horario')
 
-        # Calcular frequência de triggers
-        triggers_hora = self.get_triggers_por_hora(4)
-        total_triggers = sum(triggers_hora.values())
-        freq_triggers = total_triggers / 4 if triggers_hora else 0
+            machines_state['agressiva'].update({
+                'status': 'online',
+                'last_update': datetime.now(),
+                'last_mult': last_mult,
+                'last_mult_time': last_mult_time,
+                'saldo': saldo,
+                'deposito_inicial': state.get('deposito_inicial', 0),
+                'aposta_base': aposta_base,
+                'nivel': nivel,
+                'modo': config.get('modo', 'g6_ns9'),
+                'lucro_para_subir': config.get('lucro_para_subir', 5.8),
+                'sessoes_win': state.get('sessoes_win', 0),
+                'sessoes_loss': state.get('sessoes_loss', 0),
+                'uptime_start': state.get('inicio_timestamp'),
+                'ultimos_gatilhos': ultimos,
+                'total_rodadas': state.get('total_rodadas', 0),
+                'historico_saldo': historico_saldo[-50:],  # Últimos 50 pontos
+            })
+    except Exception as e:
+        print(f"[DASHBOARD] Erro ao carregar estado local: {e}")
 
-        # Lucro considera saques realizados (saque não é perda!)
-        saques = state.get('total_saques', 0)
-        lucro = state.get('saldo_atual', 0) - state.get('deposito_inicial', 0) + saques
-        deposito = state.get('deposito_inicial', 1)
-        lucro_pct = (lucro / deposito) * 100 if deposito > 0 else 0
+def calcular_uptime(start_str):
+    """Calcula uptime a partir de string de timestamp"""
+    if not start_str:
+        return "N/A"
+    try:
+        start = datetime.strptime(start_str, '%Y-%m-%d %H:%M:%S')
+        delta = datetime.now() - start
+        hours = int(delta.total_seconds() // 3600)
+        minutes = int((delta.total_seconds() % 3600) // 60)
+        return f"{hours}h {minutes}min"
+    except:
+        return "N/A"
 
-        # Dados da reserva
-        banca_base = reserva.get('banca_base', 0)
-        meta_valor = banca_base * 0.10 if banca_base > 0 else 0
-        lucro_acumulado = reserva.get('lucro_acumulado', 0)
-        progresso_meta = (lucro_acumulado / meta_valor * 100) if meta_valor > 0 else 0
+def calcular_tempo_desde(time_str):
+    """Calcula tempo desde um horário (formato HH:MM:SS)"""
+    if not time_str:
+        return "N/A"
+    try:
+        hoje = datetime.now().date()
+        hora = datetime.strptime(time_str, '%H:%M:%S').time()
+        momento = datetime.combine(hoje, hora)
+        if momento > datetime.now():
+            momento -= timedelta(days=1)
+        delta = datetime.now() - momento
+        segundos = int(delta.total_seconds())
+        if segundos < 60:
+            return f"{segundos}s"
+        elif segundos < 3600:
+            return f"{segundos // 60}min"
+        else:
+            return f"{segundos // 3600}h {(segundos % 3600) // 60}min"
+    except:
+        return time_str
 
-        return {
-            'timestamp': self.now_brasilia().isoformat(),
-            'saldo_atual': state.get('saldo_atual', 0),
-            'deposito_inicial': state.get('deposito_inicial', 0),
-            'total_saques': saques,
-            'lucro': lucro,
-            'lucro_pct': lucro_pct,
-            'sessoes_win': state.get('sessoes_win', 0),
-            'sessoes_loss': state.get('sessoes_loss', 0),
-            'total_rodadas': state.get('total_rodadas', 0),
-            'nivel': state.get('nivel_seguranca', 6),
-            'perfil': state.get('perfil_ativo', ''),
-            'multiplicadores': self.get_ultimos_multiplicadores(13),
-            'apostas': self.get_apostas_recentes(10),
-            'triggers_hora': triggers_hora,
-            'freq_triggers': freq_triggers,
-            'evolucao': self.get_evolucao_banca(),  # Todas as apostas da sessão
-            'performance': perf,
-            'wins_por_tentativa': self.get_wins_por_tentativa(),
-            'validacao': self.get_estatisticas_validacao(),
-            'session_info': session_info,
-            # Reserva de lucros
-            'reserva_total': reserva.get('reserva_total', 0),
-            'reserva_metas': reserva.get('total_metas_batidas', 0),
-            'reserva_meta_valor': meta_valor,
-            'reserva_progresso': progresso_meta,
-            'reserva_lucro_acum': lucro_acumulado,
+def get_machine_status(machine):
+    """Verifica se máquina está online"""
+    last = machine.get('last_update')
+    if not last:
+        return 'offline'
+    if isinstance(last, str):
+        try:
+            last = datetime.strptime(last, '%Y-%m-%d %H:%M:%S')
+        except:
+            return 'offline'
+    delta = datetime.now() - last
+    return 'online' if delta.total_seconds() < 120 else 'offline'
+
+# Template HTML Elegante
+DASHBOARD_HTML = '''
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MartingaleV2 Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #16213e;
+            --accent-1: #ff6b6b;
+            --accent-2: #4ecdc4;
+            --accent-3: #a66cff;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --border: rgba(255,255,255,0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 2.8em;
+            font-weight: 300;
+            letter-spacing: 3px;
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2), var(--accent-3));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header .tagline {
+            color: var(--text-secondary);
+            margin-top: 8px;
+            font-size: 1.1em;
         }
 
+        /* Grid de Máquinas */
+        .machines-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        @media (max-width: 1200px) {
+            .machines-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 800px) {
+            .machines-grid { grid-template-columns: 1fr; }
+        }
 
-class DashboardRequestHandler(SimpleHTTPRequestHandler):
-    """Handler customizado para servir API e arquivos estáticos"""
+        /* Card de Máquina */
+        .machine-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid var(--border);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .machine-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .machine-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .machine-title {
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+        .machine-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.85em;
+            margin-top: 3px;
+        }
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .status-online { background: #00c853; color: white; }
+        .status-offline { background: #ff5252; color: white; }
 
-    data_provider = None
+        /* Métricas */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .metric {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 15px;
+        }
+        .metric-label {
+            color: var(--text-secondary);
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+        .metric-value.positive { color: #00e676; }
+        .metric-value.negative { color: #ff5252; }
 
-    def __init__(self, *args, **kwargs):
-        self.base_dir = os.path.dirname(os.path.abspath(__file__))
-        super().__init__(*args, directory=self.base_dir, **kwargs)
+        /* Gráfico */
+        .chart-container {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            height: 150px;
+        }
 
-    def do_GET(self):
-        if self.path == '/api/dashboard':
-            self.send_api_response()
-        elif self.path == '/' or self.path == '/dashboard':
-            self.path = '/dashboard.html'
-            self.send_file_no_cache()
-        else:
-            # Adicionar no-cache para arquivos estáticos (HTML, JS, CSS)
-            if self.path.endswith(('.html', '.js', '.css')):
-                self.send_file_no_cache()
-            else:
-                super().do_GET()
+        /* Barra de Progresso */
+        .progress-section {
+            margin-bottom: 20px;
+        }
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        .progress-bar {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            height: 12px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
 
-    def send_file_no_cache(self):
-        """Envia arquivo com headers anti-cache"""
-        try:
-            file_path = os.path.join(self.base_dir, self.path.lstrip('/'))
-            with open(file_path, 'rb') as f:
-                content = f.read()
+        /* Gatilhos */
+        .gatilhos-section {
+            margin-top: 15px;
+        }
+        .gatilhos-label {
+            color: var(--text-secondary);
+            font-size: 0.8em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .gatilhos-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .gatilho-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .gatilho-win { background: rgba(0,200,83,0.3); color: #00e676; }
+        .gatilho-loss { background: rgba(255,82,82,0.3); color: #ff5252; }
 
-            self.send_response(200)
-            # Determinar content-type
-            if self.path.endswith('.html'):
-                self.send_header('Content-Type', 'text/html; charset=utf-8')
-            elif self.path.endswith('.js'):
-                self.send_header('Content-Type', 'application/javascript; charset=utf-8')
-            elif self.path.endswith('.css'):
-                self.send_header('Content-Type', 'text/css; charset=utf-8')
-            # Headers anti-cache
-            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-            self.send_header('Pragma', 'no-cache')
-            self.send_header('Expires', '0')
-            self.end_headers()
-            self.wfile.write(content)
-        except FileNotFoundError:
-            self.send_error(404, 'File not found')
-        except Exception as e:
-            self.send_error(500, str(e))
+        /* Seção Totais e Distribuição */
+        .bottom-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-top: 30px;
+        }
+        @media (max-width: 900px) {
+            .bottom-section { grid-template-columns: 1fr; }
+        }
 
-    def send_api_response(self):
-        """Envia dados JSON do dashboard"""
-        try:
-            data = self.data_provider.get_dashboard_data()
-            response = json.dumps(data, ensure_ascii=False)
+        .totals-card, .dist-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid var(--border);
+        }
+        .totals-card {
+            background: linear-gradient(135deg, var(--bg-card), rgba(78,205,196,0.1));
+            border-color: rgba(78,205,196,0.3);
+        }
+        .dist-card {
+            background: linear-gradient(135deg, var(--bg-card), rgba(255,193,7,0.1));
+            border-color: rgba(255,193,7,0.3);
+        }
+        .section-title {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Cache-Control', 'no-cache')
-            self.end_headers()
-            self.wfile.write(response.encode('utf-8'))
-        except Exception as e:
-            self.send_error(500, str(e))
+        /* Distribuição */
+        .dist-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .dist-row:last-child { border-bottom: none; }
+        .dist-action {
+            color: #ffc107;
+            font-weight: 600;
+        }
+        .dist-calc {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .dist-calc-title {
+            text-align: center;
+            color: #ffc107;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
 
-    def log_message(self, format, *args):
-        """Silencia logs do servidor"""
-        pass
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            margin-top: 30px;
+            border-top: 1px solid var(--border);
+        }
+        .update-time { color: var(--accent-2); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>MARTINGALE V2</h1>
+            <p class="tagline">Dashboard de Monitoramento em Tempo Real</p>
+        </header>
 
+        <div class="machines-grid" id="machines-grid"></div>
 
-class DashboardServer:
-    """Servidor do dashboard"""
+        <div class="bottom-section">
+            <div class="totals-card" id="totals-card"></div>
+            <div class="dist-card" id="dist-card"></div>
+        </div>
 
-    def __init__(self, port: int = 8080):
-        self.port = port
-        self.server = None
-        self.thread = None
-        self.data_provider = DashboardDataProvider()
+        <footer class="footer">
+            Última atualização: <span class="update-time" id="update-time">--</span>
+            &nbsp;|&nbsp; Auto-refresh: 5s
+        </footer>
+    </div>
 
-    def start(self):
-        """Inicia o servidor em thread separada"""
-        DashboardRequestHandler.data_provider = self.data_provider
+    <script>
+        const charts = {};
 
-        self.server = HTTPServer(('0.0.0.0', self.port), DashboardRequestHandler)
-        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
-        self.thread.start()
+        function formatMoney(value) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(value);
+        }
 
-        print(f"\n{'='*50}")
-        print(f"  DASHBOARD DISPONIVEL")
-        print(f"  http://localhost:{self.port}/dashboard")
-        print(f"{'='*50}\n")
+        function createChart(canvasId, color, data) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
 
-    def stop(self):
-        """Para o servidor"""
-        if self.server:
-            self.server.shutdown()
+            if (charts[canvasId]) {
+                charts[canvasId].data.labels = data.map(d => d.horario);
+                charts[canvasId].data.datasets[0].data = data.map(d => d.saldo);
+                charts[canvasId].update('none');
+                return;
+            }
 
+            charts[canvasId] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.horario),
+                    datasets: [{
+                        data: data.map(d => d.saldo),
+                        borderColor: color,
+                        backgroundColor: color + '20',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            display: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#666', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
 
-# Instância global para fácil acesso
-_dashboard_server = None
+        function renderMachine(id, data) {
+            const lucro = data.saldo - data.deposito_inicial;
+            const lucroPct = data.deposito_inicial > 0 ? (lucro / data.deposito_inicial * 100) : 0;
+            const winRate = (data.sessoes_win + data.sessoes_loss) > 0
+                ? (data.sessoes_win / (data.sessoes_win + data.sessoes_loss) * 100) : 0;
 
-def iniciar_dashboard(port: int = 8080):
-    """Inicia o dashboard server"""
-    global _dashboard_server
-    if _dashboard_server is None:
-        _dashboard_server = DashboardServer(port)
-        _dashboard_server.start()
-    return _dashboard_server
+            let progressHtml = '';
+            if (id === 'agressiva' && data.nivel === 9) {
+                const progresso = Math.min(100, (lucroPct / data.lucro_para_subir) * 100);
+                progressHtml = `
+                    <div class="progress-section">
+                        <div class="progress-label">
+                            <span>Migração NS9 → NS10</span>
+                            <span>${lucroPct.toFixed(1)}% / ${data.lucro_para_subir}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progresso}%; background: linear-gradient(90deg, ${data.color}, #00e676);"></div>
+                        </div>
+                    </div>
+                `;
+            }
 
-def parar_dashboard():
-    """Para o dashboard server"""
-    global _dashboard_server
-    if _dashboard_server:
-        _dashboard_server.stop()
-        _dashboard_server = None
+            let gatilhosHtml = '';
+            if (data.ultimos_gatilhos && data.ultimos_gatilhos.length > 0) {
+                gatilhosHtml = `
+                    <div class="gatilhos-section">
+                        <div class="gatilhos-label">Últimos Gatilhos</div>
+                        <div class="gatilhos-list">
+                            ${data.ultimos_gatilhos.slice(-10).map(g =>
+                                `<span class="gatilho-badge gatilho-${g.resultado.toLowerCase()}">T${g.tentativa}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            }
 
+            return `
+                <div class="machine-card" style="border-top: 3px solid ${data.color};">
+                    <div class="machine-header">
+                        <div>
+                            <div class="machine-title" style="color: ${data.color};">${data.name}</div>
+                            <div class="machine-subtitle">${data.subtitle}</div>
+                        </div>
+                        <span class="status-badge status-${data.status}">${data.status}</span>
+                    </div>
 
-if __name__ == '__main__':
-    print("Iniciando Dashboard Server...")
-    server = iniciar_dashboard(8080)
+                    <div class="chart-container">
+                        <canvas id="chart-${id}"></canvas>
+                    </div>
+
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <div class="metric-label">Saldo</div>
+                            <div class="metric-value" style="color: ${data.color};">${formatMoney(data.saldo)}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Lucro</div>
+                            <div class="metric-value ${lucro >= 0 ? 'positive' : 'negative'}">${formatMoney(lucro)}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Aposta Base</div>
+                            <div class="metric-value">${formatMoney(data.aposta_base)}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Nível</div>
+                            <div class="metric-value">NS${data.nivel}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Sessão</div>
+                            <div class="metric-value">W:${data.sessoes_win} L:${data.sessoes_loss}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Taxa</div>
+                            <div class="metric-value">${winRate.toFixed(0)}%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Uptime</div>
+                            <div class="metric-value">${data.uptime || 'N/A'}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Último Mult</div>
+                            <div class="metric-value">${data.last_mult ? data.last_mult.toFixed(2) + 'x' : 'N/A'}</div>
+                        </div>
+                    </div>
+
+                    ${progressHtml}
+                    ${gatilhosHtml}
+                </div>
+            `;
+        }
+
+        function renderTotals(data) {
+            const saldoTotal = data.agressiva.saldo + data.conservadora.saldo + data.isolada.saldo;
+            const lucroTotal = (data.agressiva.saldo - data.agressiva.deposito_inicial) +
+                              (data.conservadora.saldo - data.conservadora.deposito_inicial) +
+                              (data.isolada.saldo - data.isolada.deposito_inicial);
+            const winsTotal = data.agressiva.sessoes_win + data.conservadora.sessoes_win + data.isolada.sessoes_win;
+            const lossTotal = data.agressiva.sessoes_loss + data.conservadora.sessoes_loss + data.isolada.sessoes_loss;
+            const winRate = (winsTotal + lossTotal) > 0 ? (winsTotal / (winsTotal + lossTotal) * 100) : 0;
+
+            return `
+                <div class="section-title">📊 Totais Combinados</div>
+                <div class="metrics-grid">
+                    <div class="metric">
+                        <div class="metric-label">Saldo Total</div>
+                        <div class="metric-value" style="color: var(--accent-2);">${formatMoney(saldoTotal)}</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Lucro Total</div>
+                        <div class="metric-value ${lucroTotal >= 0 ? 'positive' : 'negative'}">${formatMoney(lucroTotal)}</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Wins / Losses</div>
+                        <div class="metric-value">W:${winsTotal} L:${lossTotal}</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Taxa Geral</div>
+                        <div class="metric-value">${winRate.toFixed(1)}%</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDistribuicao(data) {
+            const saldoA = data.agressiva.saldo;
+            const saldoC = data.conservadora.saldo;
+            const total = saldoA + saldoC;
+            const metade = total / 2;
+
+            const diffA = metade - saldoA;
+            const diffC = metade - saldoC;
+
+            const acaoA = diffA > 1 ? `depositar ${formatMoney(diffA)}` :
+                         diffA < -1 ? `sacar ${formatMoney(Math.abs(diffA))}` : 'manter';
+            const acaoC = diffC > 1 ? `depositar ${formatMoney(diffC)}` :
+                         diffC < -1 ? `sacar ${formatMoney(Math.abs(diffC))}` : 'manter';
+
+            return `
+                <div class="section-title">💰 Distribuição Dual</div>
+                <div class="dist-row">
+                    <span>AGRESSIVA</span>
+                    <span style="color: var(--accent-1);">${formatMoney(saldoA)}</span>
+                </div>
+                <div class="dist-row">
+                    <span>CONSERVADORA</span>
+                    <span style="color: var(--accent-2);">${formatMoney(saldoC)}</span>
+                </div>
+                <div class="dist-row" style="border-top: 2px solid var(--border); padding-top: 15px;">
+                    <span><strong>TOTAL DUAL</strong></span>
+                    <span><strong>${formatMoney(total)}</strong></span>
+                </div>
+
+                <div class="dist-calc">
+                    <div class="dist-calc-title">📊 Redistribuir 50/50</div>
+                    <div class="dist-row">
+                        <span>AGRESSIVA → ${formatMoney(metade)}</span>
+                        <span class="dist-action">${acaoA}</span>
+                    </div>
+                    <div class="dist-row">
+                        <span>CONSERVADORA → ${formatMoney(metade)}</span>
+                        <span class="dist-action">${acaoC}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function updateDashboard() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+
+                // Render machines
+                document.getElementById('machines-grid').innerHTML =
+                    renderMachine('agressiva', data.agressiva) +
+                    renderMachine('conservadora', data.conservadora) +
+                    renderMachine('isolada', data.isolada);
+
+                // Update charts
+                setTimeout(() => {
+                    createChart('chart-agressiva', data.agressiva.color, data.agressiva.historico_saldo || []);
+                    createChart('chart-conservadora', data.conservadora.color, data.conservadora.historico_saldo || []);
+                    createChart('chart-isolada', data.isolada.color, data.isolada.historico_saldo || []);
+                }, 100);
+
+                // Render totals and distribution
+                document.getElementById('totals-card').innerHTML = renderTotals(data);
+                document.getElementById('dist-card').innerHTML = renderDistribuicao(data);
+
+                // Update time
+                document.getElementById('update-time').textContent = new Date().toLocaleTimeString('pt-BR');
+
+            } catch (error) {
+                console.error('Erro ao atualizar:', error);
+            }
+        }
+
+        // Initial load and auto-refresh
+        updateDashboard();
+        setInterval(updateDashboard, 5000);
+    </script>
+</body>
+</html>
+'''
+
+@app.route('/')
+def dashboard():
+    return render_template_string(DASHBOARD_HTML)
+
+@app.route('/api/status')
+def api_status():
+    """Retorna status de todas as máquinas"""
+    carregar_estado_local()
+
+    result = {}
+    for key, machine in machines_state.items():
+        m = machine.copy()
+        m['status'] = get_machine_status(machine)
+        m['uptime'] = calcular_uptime(machine.get('uptime_start'))
+        m['last_mult_ago'] = calcular_tempo_desde(machine.get('last_mult_time'))
+
+        if m.get('last_update') and isinstance(m['last_update'], datetime):
+            m['last_update'] = m['last_update'].strftime('%Y-%m-%d %H:%M:%S')
+
+        result[key] = m
+
+    return jsonify(result)
+
+@app.route('/api/update/<machine_id>', methods=['POST'])
+def api_update(machine_id):
+    """Recebe atualização de uma máquina remota"""
+    if machine_id not in machines_state:
+        return jsonify({'error': 'Máquina não encontrada'}), 404
 
     try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("\nEncerrando...")
-        parar_dashboard()
+        data = request.json
+
+        machines_state[machine_id].update({
+            'status': 'online',
+            'last_update': datetime.now(),
+            'last_mult': data.get('last_mult'),
+            'last_mult_time': data.get('last_mult_time'),
+            'saldo': data.get('saldo', 0),
+            'deposito_inicial': data.get('deposito_inicial', 0),
+            'aposta_base': data.get('aposta_base', 0),
+            'nivel': data.get('nivel', 10),
+            'modo': data.get('modo', 'g6_ns10'),
+            'sessoes_win': data.get('sessoes_win', 0),
+            'sessoes_loss': data.get('sessoes_loss', 0),
+            'uptime_start': data.get('uptime_start'),
+            'ultimos_gatilhos': data.get('ultimos_gatilhos', []),
+            'total_rodadas': data.get('total_rodadas', 0),
+            'historico_saldo': data.get('historico_saldo', []),
+        })
+
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def run_dashboard():
+    """Inicia o servidor do dashboard"""
+    print(f"\n{'='*60}")
+    print(f"  DASHBOARD WEB - MartingaleV2")
+    print(f"{'='*60}")
+    print(f"  Acesse: http://localhost:{DASHBOARD_PORT}")
+    print(f"  Rede local: http://SEU_IP:{DASHBOARD_PORT}")
+    print(f"{'='*60}\n")
+
+    app.run(host='0.0.0.0', port=DASHBOARD_PORT, debug=False, threaded=True)
+
+if __name__ == '__main__':
+    run_dashboard()
