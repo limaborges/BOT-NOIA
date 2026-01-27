@@ -16,6 +16,17 @@ from flask import Flask, render_template_string, jsonify, request
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DASHBOARD_PORT = 8080
 
+# Carregar configuração de overrides (depositos iniciais corretos)
+DASHBOARD_CONFIG = {}
+config_file = os.path.join(BASE_DIR, 'dashboard_config.json')
+if os.path.exists(config_file):
+    try:
+        with open(config_file, 'r') as f:
+            DASHBOARD_CONFIG = json.load(f)
+        print(f"[DASHBOARD] Config carregada: {config_file}")
+    except Exception as e:
+        print(f"[DASHBOARD] Erro ao carregar config: {e}")
+
 # Estado das máquinas
 machines_state = {
     'agressiva': {
@@ -137,13 +148,19 @@ def carregar_estado_local():
                 last_mult = last.get('multiplicador_real')
                 last_mult_time = last.get('horario')
 
+            # Usar override de deposito_inicial se existir no config (valor != null)
+            deposito_inicial = state.get('deposito_inicial', 0)
+            override = DASHBOARD_CONFIG.get('agressiva', {}).get('deposito_inicial_override')
+            if override is not None:
+                deposito_inicial = override
+
             machines_state['agressiva'].update({
                 'status': 'online',
                 'last_update': datetime.now(),
                 'last_mult': last_mult,
                 'last_mult_time': last_mult_time,
                 'saldo': saldo,
-                'deposito_inicial': state.get('deposito_inicial', 0),
+                'deposito_inicial': deposito_inicial,
                 'aposta_base': aposta_base,
                 'nivel': nivel,
                 'modo': config.get('modo', 'g6_ns9'),
@@ -767,13 +784,19 @@ def api_update(machine_id):
     try:
         data = request.json
 
+        # Usar override de deposito_inicial se existir no config (valor != null)
+        deposito_inicial = data.get('deposito_inicial', 0)
+        override = DASHBOARD_CONFIG.get(machine_id, {}).get('deposito_inicial_override')
+        if override is not None:
+            deposito_inicial = override
+
         machines_state[machine_id].update({
             'status': 'online',
             'last_update': datetime.now(),
             'last_mult': data.get('last_mult'),
             'last_mult_time': data.get('last_mult_time'),
             'saldo': data.get('saldo', 0),
-            'deposito_inicial': data.get('deposito_inicial', 0),
+            'deposito_inicial': deposito_inicial,
             'aposta_base': data.get('aposta_base', 0),
             'nivel': data.get('nivel', 10),
             'modo': data.get('modo', 'g6_ns10'),

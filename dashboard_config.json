@@ -1,0 +1,17 @@
+{
+  "agressiva": {
+    "deposito_inicial_override": 2000.49,
+    "nome": "AGRESSIVA",
+    "descricao": "Linux - NS9/NS10"
+  },
+  "conservadora": {
+    "deposito_inicial_override": 2000.49,
+    "nome": "CONSERVADORA",
+    "descricao": "Windows Dual - NS10"
+  },
+  "isolada": {
+    "deposito_inicial_override": null,
+    "nome": "ISOLADA",
+    "descricao": "Windows Solo - NS10"
+  }
+}
