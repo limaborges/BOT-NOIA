@@ -187,7 +187,36 @@ git push
 
 ---
 
-## 10. Checklist Rápido
+## 10. Atalhos de Teclado (Durante operação)
+
+| Tecla | Função |
+|-------|--------|
+| **R** | Redefinir sessão (reset parcial) - salva lucro no acumulado |
+| **T** | Testar slots de aposta |
+| **C** | Alternar modo compacto/expandido |
+| **Q** | Sair do bot |
+
+### Comando R - Redefinir Sessão
+Use quando redistribuir lucros:
+1. Pressione **R**
+2. Escolha o novo modo (NS9/NS10) ou manter atual
+3. Confirme
+
+Isso salva o lucro atual no acumulado e reseta os contadores.
+
+---
+
+## 11. Labels Dinâmicos no Dashboard
+
+O dashboard mostra o nome baseado no MODO, não na máquina:
+- **NS9** → Aparece como "AGRESSIVA" (vermelho)
+- **NS10** → Aparece como "CONSERVADORA" (cyan)
+
+Se inverter os modos entre máquinas, os nomes também invertem.
+
+---
+
+## 12. Checklist Rápido
 
 - [ ] Git clone feito
 - [ ] venv criado e dependências instaladas

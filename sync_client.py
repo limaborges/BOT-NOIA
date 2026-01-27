@@ -60,16 +60,35 @@ def load_session_state():
         return None
 
 
+def calcular_aposta_base(saldo: float, modo: str) -> float:
+    """Calcula a aposta base baseado no saldo e modo (mesmo cálculo do bot)."""
+    # NS9: divisor 511, NS10: divisor 1023
+    if modo.lower() in ['g6_ns9', 'ns9']:
+        divisor = 511
+    else:  # NS10 (padrão)
+        divisor = 1023
+
+    return saldo / divisor if saldo > 0 else 0
+
+
 def extract_data_from_state(state: dict) -> dict:
     """Extrai dados relevantes do session_state para enviar ao dashboard."""
 
+    saldo = state.get("saldo_atual", 0)
+    modo = state.get("config_modo", {}).get("modo", "g6_ns10")
+
+    # Calcula aposta_base se não estiver no state
+    aposta_base = state.get("aposta_base")
+    if aposta_base is None or aposta_base == 0:
+        aposta_base = calcular_aposta_base(saldo, modo)
+
     # Dados básicos
     data = {
-        "saldo": state.get("saldo_atual", 0),
+        "saldo": saldo,
         "deposito_inicial": state.get("deposito_inicial", 0),
-        "aposta_base": state.get("aposta_base", 0),
+        "aposta_base": aposta_base,
         "nivel": state.get("nivel_atual", 10),
-        "modo": state.get("config_modo", {}).get("modo", "g6_ns10"),
+        "modo": modo,
         "lucro_para_subir": state.get("config_modo", {}).get("lucro_para_subir", 5.8),
         "total_rodadas": state.get("total_rodadas", 0),
         "sessoes_win": state.get("sessoes_win", 0),

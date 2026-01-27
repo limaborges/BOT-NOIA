@@ -826,6 +826,16 @@ def api_status():
 
     return jsonify(result)
 
+def calcular_aposta_base(saldo, modo):
+    """Calcula aposta base baseado em saldo e modo"""
+    if saldo <= 0:
+        return 0
+    # NS9: divisor 511, NS10: divisor 1023
+    if modo and modo.lower() in ['g6_ns9', 'ns9']:
+        return saldo / 511
+    return saldo / 1023  # NS10 padrão
+
+
 @app.route('/api/update/<machine_id>', methods=['POST'])
 def api_update(machine_id):
     """Recebe atualização de uma máquina remota"""
@@ -841,16 +851,23 @@ def api_update(machine_id):
         if override is not None:
             deposito_inicial = override
 
+        # Calcular aposta_base se não foi enviado ou é 0
+        saldo = data.get('saldo', 0)
+        modo = data.get('modo', 'g6_ns10')
+        aposta_base = data.get('aposta_base', 0)
+        if aposta_base == 0 and saldo > 0:
+            aposta_base = calcular_aposta_base(saldo, modo)
+
         machines_state[machine_id].update({
             'status': 'online',
             'last_update': datetime.now(),
             'last_mult': data.get('last_mult'),
             'last_mult_time': data.get('last_mult_time'),
-            'saldo': data.get('saldo', 0),
+            'saldo': saldo,
             'deposito_inicial': deposito_inicial,
-            'aposta_base': data.get('aposta_base', 0),
+            'aposta_base': aposta_base,
             'nivel': data.get('nivel', 10),
-            'modo': data.get('modo', 'g6_ns10'),
+            'modo': modo,
             'sessoes_win': data.get('sessoes_win', 0),
             'sessoes_loss': data.get('sessoes_loss', 0),
             'uptime_start': data.get('uptime_start'),
