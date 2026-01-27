@@ -506,6 +506,9 @@ def verificar_sessao_existente(config):
         if choice == '1':
             # Recuperar config_modo do estado e usar perfil anterior
             config_modo = ConfiguracaoModo.from_dict(estado.config_modo)
+            # Forçar lucro_para_subir correto para G6
+            if config_modo.modo in [ModoOperacao.G6_NS9, ModoOperacao.G6_NS10]:
+                config_modo.lucro_para_subir = 5.8
             return estado, config_modo, estado.perfil_ativo
 
         elif choice == '2':
@@ -520,6 +523,9 @@ def verificar_sessao_existente(config):
                 if 0 <= idx < len(profiles):
                     novo_perfil = profiles[idx]
                     config_modo = ConfiguracaoModo.from_dict(estado.config_modo)
+                    # Forçar lucro_para_subir correto para G6
+                    if config_modo.modo in [ModoOperacao.G6_NS9, ModoOperacao.G6_NS10]:
+                        config_modo.lucro_para_subir = 5.8
                     return estado, config_modo, novo_perfil
                 else:
                     print(f"{Fore.RED}Opcao invalida!")
@@ -589,6 +595,9 @@ def main():
             estado_anterior = carregar_estado_sessao()
             if estado_anterior:
                 config_modo = ConfiguracaoModo.from_dict(estado_anterior.config_modo)
+                # Forçar lucro_para_subir correto para G6
+                if config_modo.modo in [ModoOperacao.G6_NS9, ModoOperacao.G6_NS10]:
+                    config_modo.lucro_para_subir = 5.8
                 selected_profile = estado_anterior.perfil_ativo
                 print(f"{Fore.GREEN}Retomando sessao: {selected_profile}")
                 print(f"{Fore.GREEN}Saldo: R$ {estado_anterior.saldo_atual:.2f}")
