@@ -27,12 +27,36 @@ if os.path.exists(config_file):
     except Exception as e:
         print(f"[DASHBOARD] Erro ao carregar config: {e}")
 
+# Função para obter nome/cor baseado no modo
+def get_display_info(modo, machine_type):
+    """Retorna nome, subtítulo e cor baseado no modo atual"""
+    if modo in ['g6_ns9', 'G6_NS9']:
+        return {
+            'name': 'AGRESSIVA',
+            'subtitle': f'{machine_type} - NS9',
+            'color': '#ff6b6b'  # Vermelho
+        }
+    else:  # NS10
+        return {
+            'name': 'CONSERVADORA',
+            'subtitle': f'{machine_type} - NS10',
+            'color': '#4ecdc4'  # Verde/Cyan
+        }
+
+# Tipos de máquina (fixos)
+MACHINE_TYPES = {
+    'agressiva': 'Linux',
+    'conservadora': 'Windows Dual',
+    'isolada': 'Windows Solo'
+}
+
 # Estado das máquinas
 machines_state = {
     'agressiva': {
         'name': 'AGRESSIVA',
-        'subtitle': 'Linux - NS9/NS10',
+        'subtitle': 'Linux - NS9',
         'color': '#ff6b6b',
+        'machine_type': 'Linux',
         'status': 'offline',
         'last_update': None,
         'last_mult': None,
@@ -54,6 +78,7 @@ machines_state = {
         'name': 'CONSERVADORA',
         'subtitle': 'Windows Dual - NS10',
         'color': '#4ecdc4',
+        'machine_type': 'Windows Dual',
         'status': 'offline',
         'last_update': None,
         'last_mult': None,
@@ -74,6 +99,7 @@ machines_state = {
         'name': 'ISOLADA',
         'subtitle': 'Windows Solo - NS10',
         'color': '#a66cff',
+        'machine_type': 'Windows Solo',
         'status': 'offline',
         'last_update': None,
         'last_mult': None,
@@ -770,6 +796,15 @@ def api_status():
 
         if m.get('last_update') and isinstance(m['last_update'], datetime):
             m['last_update'] = m['last_update'].strftime('%Y-%m-%d %H:%M:%S')
+
+        # Atualizar nome/cor baseado no modo atual (exceto ISOLADA que mantém nome fixo)
+        if key != 'isolada':
+            modo = m.get('modo', 'g6_ns10')
+            machine_type = MACHINE_TYPES.get(key, 'Unknown')
+            display_info = get_display_info(modo, machine_type)
+            m['name'] = display_info['name']
+            m['subtitle'] = display_info['subtitle']
+            m['color'] = display_info['color']
 
         result[key] = m
 
