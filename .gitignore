@@ -49,6 +49,8 @@ compartilhado/
 !TELEGRAM_CONFIG.md
 !TELEGRAM_URGENTE.md
 !INSTRUCOES_CLAUDE_WINDOWS.txt
+!CLAUDE_SETUP_CONSERVADORA.md
+!CLAUDE_SETUP_ISOLADA.md
 *.png
 !templates_matching/*.png
 *.jpg
