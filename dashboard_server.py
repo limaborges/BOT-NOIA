@@ -575,8 +575,10 @@ DASHBOARD_HTML = '''
         }
 
         function renderMachine(id, data) {
-            const lucro = data.saldo - data.deposito_inicial;
-            const lucroPct = data.deposito_inicial > 0 ? (lucro / data.deposito_inicial * 100) : 0;
+            const lucroSessao = data.saldo - data.deposito_inicial;
+            const lucroAcumuladoAnterior = data.lucro_acumulado_anterior || 0;
+            const lucroTotal = lucroSessao + lucroAcumuladoAnterior;
+            const lucroPct = data.deposito_inicial > 0 ? (lucroSessao / data.deposito_inicial * 100) : 0;
             const winRate = (data.sessoes_win + data.sessoes_loss) > 0
                 ? (data.sessoes_win / (data.sessoes_win + data.sessoes_loss) * 100) : 0;
 
@@ -630,12 +632,12 @@ DASHBOARD_HTML = '''
                             <div class="metric-value" style="color: ${data.color};">${formatMoney(data.saldo)}</div>
                         </div>
                         <div class="metric">
-                            <div class="metric-label">Lucro</div>
-                            <div class="metric-value ${lucro >= 0 ? 'positive' : 'negative'}">${formatMoney(lucro)}</div>
+                            <div class="metric-label">Lucro Sessão</div>
+                            <div class="metric-value ${lucroSessao >= 0 ? 'positive' : 'negative'}">${formatMoney(lucroSessao)}</div>
                         </div>
                         <div class="metric">
-                            <div class="metric-label">Aposta Base</div>
-                            <div class="metric-value">${formatMoney(data.aposta_base)}</div>
+                            <div class="metric-label">Lucro Total</div>
+                            <div class="metric-value ${lucroTotal >= 0 ? 'positive' : 'negative'}" style="font-weight: bold;">${formatMoney(lucroTotal)}</div>
                         </div>
                         <div class="metric">
                             <div class="metric-label">Nível</div>
@@ -667,9 +669,13 @@ DASHBOARD_HTML = '''
 
         function renderTotals(data) {
             const saldoTotal = data.agressiva.saldo + data.conservadora.saldo + data.isolada.saldo;
-            const lucroTotal = (data.agressiva.saldo - data.agressiva.deposito_inicial) +
-                              (data.conservadora.saldo - data.conservadora.deposito_inicial) +
-                              (data.isolada.saldo - data.isolada.deposito_inicial);
+            const lucroSessao = (data.agressiva.saldo - data.agressiva.deposito_inicial) +
+                               (data.conservadora.saldo - data.conservadora.deposito_inicial) +
+                               (data.isolada.saldo - data.isolada.deposito_inicial);
+            const lucroAcumulado = (data.agressiva.lucro_acumulado_anterior || 0) +
+                                  (data.conservadora.lucro_acumulado_anterior || 0) +
+                                  (data.isolada.lucro_acumulado_anterior || 0);
+            const lucroTotal = lucroSessao + lucroAcumulado;
             const winsTotal = data.agressiva.sessoes_win + data.conservadora.sessoes_win + data.isolada.sessoes_win;
             const lossTotal = data.agressiva.sessoes_loss + data.conservadora.sessoes_loss + data.isolada.sessoes_loss;
             const winRate = (winsTotal + lossTotal) > 0 ? (winsTotal / (winsTotal + lossTotal) * 100) : 0;
@@ -682,16 +688,22 @@ DASHBOARD_HTML = '''
                         <div class="metric-value" style="color: var(--accent-2);">${formatMoney(saldoTotal)}</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">Lucro Total</div>
-                        <div class="metric-value ${lucroTotal >= 0 ? 'positive' : 'negative'}">${formatMoney(lucroTotal)}</div>
+                        <div class="metric-label">Lucro Sessão</div>
+                        <div class="metric-value ${lucroSessao >= 0 ? 'positive' : 'negative'}">${formatMoney(lucroSessao)}</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-label">Wins / Losses</div>
-                        <div class="metric-value">W:${winsTotal} L:${lossTotal}</div>
+                        <div class="metric-label">Lucro Total</div>
+                        <div class="metric-value ${lucroTotal >= 0 ? 'positive' : 'negative'}" style="font-weight: bold;">${formatMoney(lucroTotal)}</div>
                     </div>
                     <div class="metric">
                         <div class="metric-label">Taxa Geral</div>
                         <div class="metric-value">${winRate.toFixed(1)}%</div>
+                    </div>
+                </div>
+                <div class="metrics-grid" style="margin-top: 10px;">
+                    <div class="metric">
+                        <div class="metric-label">Wins / Losses</div>
+                        <div class="metric-value">W:${winsTotal} L:${lossTotal}</div>
                     </div>
                 </div>
             `;
@@ -805,6 +817,10 @@ def api_status():
             m['name'] = display_info['name']
             m['subtitle'] = display_info['subtitle']
             m['color'] = display_info['color']
+
+        # Adicionar lucro acumulado anterior do config
+        lucro_acumulado_anterior = DASHBOARD_CONFIG.get(key, {}).get('lucro_acumulado_anterior', 0) or 0
+        m['lucro_acumulado_anterior'] = lucro_acumulado_anterior
 
         result[key] = m
 
