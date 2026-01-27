@@ -610,7 +610,7 @@ class HybridUIRich:
                 padding=(0, 0)
             )
             console.print(painel)
-            console.print("[dim]C=Expandir Q=Sair[/dim]")
+            console.print("[dim]C=Expandir R=Redefinir Q=Sair[/dim]")
         else:
             # Modo normal
             painel = Panel(
@@ -621,7 +621,7 @@ class HybridUIRich:
                 padding=(0, 1)
             )
             console.print(painel)
-            console.print("[dim]T=Testar | C=Compacto | Q=Sair[/dim]")
+            console.print("[dim]T=Testar | C=Compacto | R=Redefinir | Q=Sair[/dim]")
 
     def check_keyboard(self):
         """Verifica se uma tecla foi pressionada"""
@@ -711,6 +711,81 @@ class HybridUIRich:
         if hasattr(self.controller, 'retomar_apos_teste'):
             self.controller.retomar_apos_teste()
 
+    def menu_redefinir(self):
+        """Menu para redefinir sessão (reset parcial)"""
+        console.clear()
+        console.print(f"\n[bold cyan]{'═'*50}[/bold cyan]")
+        console.print("[bold cyan]  REDEFINIR SESSÃO (Reset Parcial)[/bold cyan]")
+        console.print(f"[bold cyan]{'═'*50}[/bold cyan]")
+
+        # Mostrar estado atual
+        try:
+            data = self.controller.get_current_status()
+            saldo = data.get('saldo_atual', 0)
+            deposito = data.get('deposito_inicial', 0)
+            lucro = saldo - deposito
+            modo = data.get('modo_operacao', 'N/A')
+
+            console.print(f"\n[white]Estado atual:[/white]")
+            console.print(f"  Saldo: [cyan]R$ {saldo:.2f}[/cyan]")
+            console.print(f"  Depósito inicial: [white]R$ {deposito:.2f}[/white]")
+            console.print(f"  Lucro sessão: [green]R$ {lucro:.2f}[/green]" if lucro >= 0 else f"  Lucro sessão: [red]R$ {lucro:.2f}[/red]")
+            console.print(f"  Modo: [yellow]{modo}[/yellow]")
+        except:
+            pass
+
+        console.print(f"\n[white]Isso irá:[/white]")
+        console.print("  • Salvar lucro atual no acumulado")
+        console.print("  • Resetar depósito inicial = saldo atual")
+        console.print("  • Zerar contadores de sessão")
+
+        console.print(f"\n[bold white]Escolha o novo modo:[/bold white]")
+        console.print("  [cyan]1[/cyan] - NS9 (Agressivo)")
+        console.print("  [cyan]2[/cyan] - NS10 (Conservador)")
+        console.print("  [cyan]3[/cyan] - Manter modo atual")
+        console.print("  [cyan]0[/cyan] - Cancelar")
+
+        try:
+            escolha = input("\nOpção: ").strip()
+
+            if escolha == '0':
+                console.print("[yellow]Cancelado.[/yellow]")
+                time.sleep(1)
+                return
+
+            novo_modo = None
+            if escolha == '1':
+                novo_modo = 'ns9'
+            elif escolha == '2':
+                novo_modo = 'ns10'
+            elif escolha == '3':
+                novo_modo = None
+            else:
+                console.print("[red]Opção inválida![/red]")
+                time.sleep(1)
+                return
+
+            # Confirmar
+            console.print(f"\n[yellow]Confirma redefinição? (s/n)[/yellow]")
+            confirma = input().strip().lower()
+
+            if confirma == 's':
+                if hasattr(self.controller, 'redefinir_sessao'):
+                    sucesso = self.controller.redefinir_sessao(novo_modo)
+                    if sucesso:
+                        console.print(f"\n[bold green]✓ Sessão redefinida com sucesso![/bold green]")
+                    else:
+                        console.print(f"\n[bold red]✗ Erro ao redefinir sessão[/bold red]")
+                else:
+                    console.print(f"\n[red]Função não disponível neste controller[/red]")
+            else:
+                console.print("[yellow]Cancelado.[/yellow]")
+
+        except Exception as e:
+            console.print(f"\n[red]Erro: {e}[/red]")
+
+        input("\n[Pressione ENTER para voltar]")
+
     def start(self):
         """Inicia interface"""
         self.running = True
@@ -756,6 +831,8 @@ class HybridUIRich:
                     self.testar_slots()
                 elif key == 'C':
                     self.toggle_compact()
+                elif key == 'R':
+                    self.menu_redefinir()
                 elif key == 'Q':
                     self.running = False
                     break

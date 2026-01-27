@@ -1586,6 +1586,87 @@ class HybridSystemV2:
         except Exception as e:
             pass  # Silencioso para nao atrapalhar o bot
 
+    # ===== REDEFINIR SESSÃO (RESET PARCIAL) =====
+
+    def redefinir_sessao(self, novo_modo: str = None) -> bool:
+        """
+        Faz reset parcial da sessão:
+        1. Salva lucro atual no lucro_acumulado_anterior (dashboard_config.json)
+        2. Reseta deposito_inicial para saldo atual
+        3. Zera contadores de sessão
+        4. Opcionalmente muda o modo (ns9/ns10)
+
+        Args:
+            novo_modo: 'ns9' ou 'ns10' (opcional, se None mantém o atual)
+
+        Returns:
+            True se sucesso, False se erro
+        """
+        try:
+            from colorama import Fore
+
+            saldo_atual = self.saldo_atual
+            deposito_inicial = self.deposito_inicial
+            lucro_sessao = saldo_atual - deposito_inicial
+
+            self._log(f"{Fore.CYAN}[REDEFINIR] Iniciando reset parcial...")
+            self._log(f"{Fore.WHITE}  Saldo atual: R$ {saldo_atual:.2f}")
+            self._log(f"{Fore.WHITE}  Lucro da sessão: R$ {lucro_sessao:.2f}")
+
+            # 1. Atualizar dashboard_config.json com lucro acumulado
+            dashboard_config_path = os.path.join(os.path.dirname(__file__), 'dashboard_config.json')
+            if os.path.exists(dashboard_config_path):
+                with open(dashboard_config_path, 'r') as f:
+                    dash_config = json.load(f)
+
+                # Determinar qual máquina é esta (agressiva = linux)
+                machine_id = 'agressiva'  # Linux é sempre agressiva no identificador
+
+                if machine_id in dash_config:
+                    lucro_anterior = dash_config[machine_id].get('lucro_acumulado_anterior', 0) or 0
+                    novo_acumulado = lucro_anterior + lucro_sessao
+                    dash_config[machine_id]['lucro_acumulado_anterior'] = round(novo_acumulado, 2)
+
+                    with open(dashboard_config_path, 'w') as f:
+                        json.dump(dash_config, f, indent=2)
+
+                    self._log(f"{Fore.GREEN}  Lucro acumulado atualizado: R$ {lucro_anterior:.2f} + R$ {lucro_sessao:.2f} = R$ {novo_acumulado:.2f}")
+
+            # 2. Resetar deposito_inicial para saldo atual
+            self.deposito_inicial = saldo_atual
+            self._log(f"{Fore.GREEN}  Novo depósito inicial: R$ {saldo_atual:.2f}")
+
+            # 3. Zerar contadores de sessão
+            self.sessoes_win = 0
+            self.sessoes_loss = 0
+            self.total_rodadas = 0
+            self._log(f"{Fore.GREEN}  Contadores zerados")
+
+            # 4. Mudar modo se solicitado
+            if novo_modo:
+                novo_modo = novo_modo.lower()
+                if novo_modo == 'ns9':
+                    self.config_modo.modo = ModoOperacao.G6_NS9
+                    self.nivel_seguranca = 9
+                    self._log(f"{Fore.GREEN}  Modo alterado para NS9 (Agressivo)")
+                elif novo_modo == 'ns10':
+                    self.config_modo.modo = ModoOperacao.G6_NS10
+                    self.nivel_seguranca = 10
+                    self._log(f"{Fore.GREEN}  Modo alterado para NS10 (Conservador)")
+
+                # Recalcular aposta base
+                self._atualizar_aposta_base()
+
+            # 5. Salvar estado
+            self.salvar_estado()
+
+            self._log(f"{Fore.CYAN}[REDEFINIR] Reset parcial concluído!")
+            return True
+
+        except Exception as e:
+            self._log(f"{Fore.RED}[REDEFINIR] Erro: {e}")
+            return False
+
     # ===== AUTO-RESTART PARA LIBERAR MEMÓRIA =====
 
     def _verificar_auto_restart(self, multiplicador: float):
