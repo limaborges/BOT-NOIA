@@ -1711,7 +1711,11 @@ class HybridSystemV2:
             return True
 
         except Exception as e:
+            import traceback
             self._log(f"{Fore.RED}[REDEFINIR] Erro: {e}")
+            self._log(f"{Fore.RED}{traceback.format_exc()}")
+            print(f"\n[REDEFINIR] ERRO DETALHADO: {e}")
+            print(traceback.format_exc())
             return False
 
     # ===== AUTO-RESTART PARA LIBERAR MEMÓRIA =====
