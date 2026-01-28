@@ -198,25 +198,60 @@ git push
 
 ### Comando R - Redefinir Sessão
 Use quando redistribuir lucros:
-1. Pressione **R**
-2. Escolha o novo modo (NS9/NS10) ou manter atual
-3. Confirme
+1. Pressione **R** para abrir o menu
+2. Escolha o novo modo:
+   - `1` = NS9 (Agressivo)
+   - `2` = NS10 (Conservador)
+   - `3` = Manter modo atual
+   - `0` = Cancelar
+3. Digite **s** e pressione **ENTER** para confirmar
 
 Isso salva o lucro atual no acumulado e reseta os contadores.
 
+**Nota:** Se a confirmação não funcionar, verifique se digitou 's' (minúsculo) e pressionou ENTER.
+
 ---
 
-## 11. Labels Dinâmicos no Dashboard
+## 11. Dashboard - Funcionalidades
 
+### Labels Dinâmicos
 O dashboard mostra o nome baseado no MODO, não na máquina:
 - **NS9** → Aparece como "AGRESSIVA" (vermelho)
 - **NS10** → Aparece como "CONSERVADORA" (cyan)
 
 Se inverter os modos entre máquinas, os nomes também invertem.
 
+### Gráfico Unificado
+- Um gráfico no topo mostra o **% de lucro** de todas as máquinas
+- Cada máquina tem uma cor diferente (vermelho, cyan, roxo)
+
+### Métricas
+- **Lucro Sessão**: Lucro desde o início da sessão atual (R$ e %)
+- **Lucro Total**: Lucro sessão + lucro acumulado anterior
+- **Últimos 10 Ciclos**: Mostra horário, tentativa (T1, T2...) e resultado
+
+### Barra de Progresso NS9→NS10
+- Aparece para qualquer máquina em modo NS9
+- Mostra progresso da meta de lucro para migrar para NS10
+
 ---
 
-## 12. Checklist Rápido
+## 12. Atualizar Código (Git Pull)
+
+Quando houver atualizações no repositório:
+
+```bash
+cd C:\Users\SEU_USUARIO\MartingaleV2_Build
+git pull
+```
+
+**Após atualizar:**
+1. Reinicie o bot (`start_v2.py`)
+2. Reinicie o sync client (`sync_client.py`)
+
+---
+
+## 13. Checklist Rápido
 
 - [ ] Git clone feito
 - [ ] venv criado e dependências instaladas
