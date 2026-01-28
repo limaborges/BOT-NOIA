@@ -1588,6 +1588,44 @@ class HybridSystemV2:
 
     # ===== REDEFINIR SESSÃO (RESET PARCIAL) =====
 
+    def _detectar_machine_id(self) -> str:
+        """Detecta o ID da máquina atual para o dashboard."""
+        import platform
+
+        # 1. Tentar ler de sync_client.py (mais confiável para Windows)
+        try:
+            sync_client_path = os.path.join(os.path.dirname(__file__), 'sync_client.py')
+            if os.path.exists(sync_client_path):
+                with open(sync_client_path, 'r') as f:
+                    content = f.read()
+                    import re
+                    match = re.search(r'MACHINE_ID\s*=\s*["\'](\w+)["\']', content)
+                    if match:
+                        return match.group(1).lower()
+        except:
+            pass
+
+        # 2. Tentar ler de machine_config.json
+        try:
+            config_path = os.path.join(os.path.dirname(__file__), 'machine_config.json')
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+                    name = config.get('machine_name', '').lower()
+                    if 'isolada' in name:
+                        return 'isolada'
+                    elif 'dual' in name or 'conservadora' in name:
+                        return 'conservadora'
+        except:
+            pass
+
+        # 3. Fallback: detectar pelo sistema operacional
+        if platform.system() == 'Linux':
+            return 'agressiva'
+        else:
+            # Windows - assumir conservadora por padrão
+            return 'conservadora'
+
     def redefinir_sessao(self, novo_modo: str = None) -> bool:
         """
         Faz reset parcial da sessão:
@@ -1604,6 +1642,7 @@ class HybridSystemV2:
         """
         try:
             from colorama import Fore
+            import platform
 
             saldo_atual = self.saldo_atual
             deposito_inicial = self.deposito_inicial
@@ -1613,24 +1652,32 @@ class HybridSystemV2:
             self._log(f"{Fore.WHITE}  Saldo atual: R$ {saldo_atual:.2f}")
             self._log(f"{Fore.WHITE}  Lucro da sessão: R$ {lucro_sessao:.2f}")
 
-            # 1. Atualizar dashboard_config.json com lucro acumulado
+            # Detectar qual máquina é esta
+            machine_id = self._detectar_machine_id()
+            self._log(f"{Fore.WHITE}  Machine ID: {machine_id}")
+
+            # 1. Atualizar dashboard_config.json com lucro acumulado (opcional)
             dashboard_config_path = os.path.join(os.path.dirname(__file__), 'dashboard_config.json')
             if os.path.exists(dashboard_config_path):
-                with open(dashboard_config_path, 'r') as f:
-                    dash_config = json.load(f)
+                try:
+                    with open(dashboard_config_path, 'r') as f:
+                        dash_config = json.load(f)
 
-                # Determinar qual máquina é esta (agressiva = linux)
-                machine_id = 'agressiva'  # Linux é sempre agressiva no identificador
+                    if machine_id in dash_config:
+                        lucro_anterior = dash_config[machine_id].get('lucro_acumulado_anterior', 0) or 0
+                        novo_acumulado = lucro_anterior + lucro_sessao
+                        dash_config[machine_id]['lucro_acumulado_anterior'] = round(novo_acumulado, 2)
 
-                if machine_id in dash_config:
-                    lucro_anterior = dash_config[machine_id].get('lucro_acumulado_anterior', 0) or 0
-                    novo_acumulado = lucro_anterior + lucro_sessao
-                    dash_config[machine_id]['lucro_acumulado_anterior'] = round(novo_acumulado, 2)
+                        with open(dashboard_config_path, 'w') as f:
+                            json.dump(dash_config, f, indent=2)
 
-                    with open(dashboard_config_path, 'w') as f:
-                        json.dump(dash_config, f, indent=2)
-
-                    self._log(f"{Fore.GREEN}  Lucro acumulado atualizado: R$ {lucro_anterior:.2f} + R$ {lucro_sessao:.2f} = R$ {novo_acumulado:.2f}")
+                        self._log(f"{Fore.GREEN}  Lucro acumulado atualizado: R$ {lucro_anterior:.2f} + R$ {lucro_sessao:.2f} = R$ {novo_acumulado:.2f}")
+                    else:
+                        self._log(f"{Fore.YELLOW}  Machine ID '{machine_id}' não encontrado no dashboard_config.json")
+                except Exception as e:
+                    self._log(f"{Fore.YELLOW}  Aviso: Não foi possível atualizar dashboard_config.json: {e}")
+            else:
+                self._log(f"{Fore.YELLOW}  dashboard_config.json não encontrado - pulando atualização do acumulado")
 
             # 2. Resetar deposito_inicial para saldo atual
             self.deposito_inicial = saldo_atual
