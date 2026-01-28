@@ -1695,14 +1695,15 @@ class HybridSystemV2:
                 if novo_modo == 'ns9':
                     self.config_modo.modo = ModoOperacao.G6_NS9
                     self.nivel_seguranca = 9
+                    if hasattr(self, 'martingale'):
+                        self.martingale.set_nivel_seguranca(9)
                     self._log(f"{Fore.GREEN}  Modo alterado para NS9 (Agressivo)")
                 elif novo_modo == 'ns10':
                     self.config_modo.modo = ModoOperacao.G6_NS10
                     self.nivel_seguranca = 10
+                    if hasattr(self, 'martingale'):
+                        self.martingale.set_nivel_seguranca(10)
                     self._log(f"{Fore.GREEN}  Modo alterado para NS10 (Conservador)")
-
-                # Recalcular aposta base
-                self._atualizar_aposta_base()
 
             # 5. Salvar estado
             self.salvar_estado()
