@@ -711,9 +711,23 @@ class HybridUIRich:
         if hasattr(self.controller, 'retomar_apos_teste'):
             self.controller.retomar_apos_teste()
 
+    def _flush_input(self):
+        """Limpa buffer de entrada do teclado"""
+        try:
+            if HAS_MSVCRT:
+                while msvcrt.kbhit():
+                    msvcrt.getch()
+            else:
+                import sys, termios
+                termios.tcflush(sys.stdin, termios.TCIFLUSH)
+        except:
+            pass
+
     def menu_redefinir(self):
         """Menu para redefinir sessão (reset parcial)"""
         console.clear()
+        self._flush_input()  # Limpar buffer antes do menu
+
         console.print(f"\n[bold cyan]{'═'*50}[/bold cyan]")
         console.print("[bold cyan]  REDEFINIR SESSÃO (Reset Parcial)[/bold cyan]")
         console.print(f"[bold cyan]{'═'*50}[/bold cyan]")
@@ -746,7 +760,9 @@ class HybridUIRich:
         console.print("  [cyan]0[/cyan] - Cancelar")
 
         try:
-            escolha = input("\nOpção: ").strip()
+            self._flush_input()
+            console.print("\nOpção: ", end="")
+            escolha = input().strip()
 
             if escolha == '0':
                 console.print("[yellow]Cancelado.[/yellow]")
@@ -766,10 +782,14 @@ class HybridUIRich:
                 return
 
             # Confirmar
-            console.print(f"\n[yellow]Confirma redefinição? (s/n)[/yellow]")
+            self._flush_input()
+            console.print(f"\n[bold yellow]Confirma redefinição? Digite 's' e pressione ENTER:[/bold yellow]")
+            console.print(">>> ", end="")
             confirma = input().strip().lower()
+            console.print(f"[dim]Você digitou: '{confirma}'[/dim]")
 
-            if confirma == 's':
+            if confirma == 's' or confirma == 'sim':
+                console.print(f"\n[cyan]Executando redefinição...[/cyan]")
                 if hasattr(self.controller, 'redefinir_sessao'):
                     sucesso = self.controller.redefinir_sessao(novo_modo)
                     if sucesso:
@@ -777,12 +797,14 @@ class HybridUIRich:
                     else:
                         console.print(f"\n[bold red]✗ Erro ao redefinir sessão[/bold red]")
                 else:
-                    console.print(f"\n[red]Função não disponível neste controller[/red]")
+                    console.print(f"\n[red]Função redefinir_sessao não encontrada no controller[/red]")
             else:
                 console.print("[yellow]Cancelado.[/yellow]")
 
         except Exception as e:
             console.print(f"\n[red]Erro: {e}[/red]")
+            import traceback
+            console.print(f"[dim]{traceback.format_exc()}[/dim]")
 
         input("\n[Pressione ENTER para voltar]")
 

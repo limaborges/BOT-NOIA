@@ -281,12 +281,12 @@ DASHBOARD_HTML = '''
         /* Header */
         .header {
             text-align: center;
-            padding: 30px 0;
+            padding: 20px 0;
             border-bottom: 1px solid var(--border);
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         .header h1 {
-            font-size: 2.8em;
+            font-size: 2.2em;
             font-weight: 300;
             letter-spacing: 3px;
             background: linear-gradient(135deg, var(--accent-1), var(--accent-2), var(--accent-3));
@@ -295,16 +295,46 @@ DASHBOARD_HTML = '''
         }
         .header .tagline {
             color: var(--text-secondary);
-            margin-top: 8px;
-            font-size: 1.1em;
+            margin-top: 5px;
+            font-size: 1em;
+        }
+
+        /* Grafico Unificado */
+        .unified-chart-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid var(--border);
+        }
+        .unified-chart-container {
+            height: 200px;
+        }
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
         }
 
         /* Grid de Máquinas */
         .machines-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 25px;
-            margin-bottom: 30px;
+            gap: 20px;
+            margin-bottom: 25px;
         }
         @media (max-width: 1200px) {
             .machines-grid { grid-template-columns: repeat(2, 1fr); }
@@ -317,33 +347,33 @@ DASHBOARD_HTML = '''
         .machine-card {
             background: var(--bg-card);
             border-radius: 20px;
-            padding: 25px;
+            padding: 20px;
             border: 1px solid var(--border);
             transition: transform 0.3s, box-shadow 0.3s;
         }
         .machine-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
         }
         .machine-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .machine-title {
-            font-size: 1.4em;
+            font-size: 1.3em;
             font-weight: 600;
         }
         .machine-subtitle {
             color: var(--text-secondary);
-            font-size: 0.85em;
-            margin-top: 3px;
+            font-size: 0.8em;
+            margin-top: 2px;
         }
         .status-badge {
-            padding: 6px 14px;
+            padding: 5px 12px;
             border-radius: 20px;
-            font-size: 0.75em;
+            font-size: 0.7em;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -355,90 +385,98 @@ DASHBOARD_HTML = '''
         .metrics-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 15px;
         }
         .metric {
             background: rgba(255,255,255,0.03);
-            border-radius: 12px;
-            padding: 15px;
+            border-radius: 10px;
+            padding: 12px;
         }
         .metric-label {
             color: var(--text-secondary);
-            font-size: 0.8em;
+            font-size: 0.75em;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
         .metric-value {
-            font-size: 1.5em;
+            font-size: 1.3em;
             font-weight: 600;
+        }
+        .metric-subvalue {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            margin-top: 2px;
         }
         .metric-value.positive { color: #00e676; }
         .metric-value.negative { color: #ff5252; }
 
-        /* Gráfico */
-        .chart-container {
-            background: rgba(0,0,0,0.2);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            height: 150px;
-        }
-
         /* Barra de Progresso */
         .progress-section {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            background: rgba(255,107,107,0.1);
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid rgba(255,107,107,0.3);
         }
         .progress-label {
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
-            font-size: 0.9em;
+            font-size: 0.85em;
         }
         .progress-bar {
             background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            height: 12px;
+            border-radius: 8px;
+            height: 10px;
             overflow: hidden;
         }
         .progress-fill {
             height: 100%;
-            border-radius: 10px;
+            border-radius: 8px;
             transition: width 0.5s ease;
         }
 
-        /* Gatilhos */
-        .gatilhos-section {
-            margin-top: 15px;
+        /* Ciclos/Gatilhos detalhados */
+        .ciclos-section {
+            margin-top: 12px;
         }
-        .gatilhos-label {
+        .ciclos-label {
             color: var(--text-secondary);
-            font-size: 0.8em;
-            margin-bottom: 10px;
+            font-size: 0.75em;
+            margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
-        .gatilhos-list {
+        .ciclos-list {
             display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 180px;
+            overflow-y: auto;
         }
-        .gatilho-badge {
-            padding: 4px 10px;
+        .ciclo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
             border-radius: 6px;
             font-size: 0.8em;
-            font-weight: 600;
         }
-        .gatilho-win { background: rgba(0,200,83,0.3); color: #00e676; }
-        .gatilho-loss { background: rgba(255,82,82,0.3); color: #ff5252; }
+        .ciclo-win { background: rgba(0,200,83,0.15); }
+        .ciclo-loss { background: rgba(255,82,82,0.15); }
+        .ciclo-time { color: var(--text-secondary); }
+        .ciclo-result { font-weight: 600; }
+        .ciclo-result.win { color: #00e676; }
+        .ciclo-result.loss { color: #ff5252; }
 
         /* Seção Totais e Distribuição */
         .bottom-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            margin-top: 30px;
+            gap: 20px;
+            margin-top: 25px;
         }
         @media (max-width: 900px) {
             .bottom-section { grid-template-columns: 1fr; }
@@ -447,7 +485,7 @@ DASHBOARD_HTML = '''
         .totals-card, .dist-card {
             background: var(--bg-card);
             border-radius: 20px;
-            padding: 25px;
+            padding: 20px;
             border: 1px solid var(--border);
         }
         .totals-card {
@@ -459,8 +497,8 @@ DASHBOARD_HTML = '''
             border-color: rgba(255,193,7,0.3);
         }
         .section-title {
-            font-size: 1.3em;
-            margin-bottom: 20px;
+            font-size: 1.2em;
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -470,7 +508,7 @@ DASHBOARD_HTML = '''
         .dist-row {
             display: flex;
             justify-content: space-between;
-            padding: 12px 0;
+            padding: 10px 0;
             border-bottom: 1px solid var(--border);
         }
         .dist-row:last-child { border-bottom: none; }
@@ -480,24 +518,25 @@ DASHBOARD_HTML = '''
         }
         .dist-calc {
             background: rgba(0,0,0,0.3);
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
         }
         .dist-calc-title {
             text-align: center;
             color: #ffc107;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             font-weight: 600;
+            font-size: 0.95em;
         }
 
         /* Footer */
         .footer {
             text-align: center;
-            padding: 20px;
+            padding: 15px;
             color: var(--text-secondary);
-            font-size: 0.9em;
-            margin-top: 30px;
+            font-size: 0.85em;
+            margin-top: 25px;
             border-top: 1px solid var(--border);
         }
         .update-time { color: var(--accent-2); }
@@ -509,6 +548,14 @@ DASHBOARD_HTML = '''
             <h1>MARTINGALE V2</h1>
             <p class="tagline">Dashboard de Monitoramento em Tempo Real</p>
         </header>
+
+        <!-- Grafico Unificado -->
+        <div class="unified-chart-card">
+            <div class="unified-chart-container">
+                <canvas id="unified-chart"></canvas>
+            </div>
+            <div class="chart-legend" id="chart-legend"></div>
+        </div>
 
         <div class="machines-grid" id="machines-grid"></div>
 
@@ -524,7 +571,7 @@ DASHBOARD_HTML = '''
     </div>
 
     <script>
-        const charts = {};
+        let unifiedChart = null;
 
         function formatMoney(value) {
             return new Intl.NumberFormat('pt-BR', {
@@ -533,80 +580,148 @@ DASHBOARD_HTML = '''
             }).format(value);
         }
 
-        function createChart(canvasId, color, data) {
-            const ctx = document.getElementById(canvasId);
+        function formatPct(value) {
+            return (value >= 0 ? '+' : '') + value.toFixed(2) + '%';
+        }
+
+        function createUnifiedChart(data) {
+            const ctx = document.getElementById('unified-chart');
             if (!ctx) return;
 
-            if (charts[canvasId]) {
-                charts[canvasId].data.labels = data.map(d => d.horario);
-                charts[canvasId].data.datasets[0].data = data.map(d => d.saldo);
-                charts[canvasId].update('none');
-                return;
-            }
+            // Preparar dados - normalizar para % de lucro
+            const datasets = [];
+            const machines = [
+                { key: 'agressiva', label: 'CONSERVADORA', color: data.agressiva.color },
+                { key: 'conservadora', label: 'AGRESSIVA', color: data.conservadora.color },
+                { key: 'isolada', label: 'ISOLADA', color: '#a66cff' }
+            ];
 
-            charts[canvasId] = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.map(d => d.horario),
-                    datasets: [{
-                        data: data.map(d => d.saldo),
-                        borderColor: color,
-                        backgroundColor: color + '20',
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 0,
-                        borderWidth: 2,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { display: false },
-                        y: {
-                            display: true,
-                            grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#666', font: { size: 10 } }
-                        }
-                    }
+            // Pegar o maior historico para usar como labels
+            let maxLen = 0;
+            let allLabels = [];
+            machines.forEach(m => {
+                const hist = data[m.key].historico_saldo || [];
+                if (hist.length > maxLen) {
+                    maxLen = hist.length;
+                    allLabels = hist.map(h => h.horario);
                 }
             });
+
+            machines.forEach(m => {
+                const hist = data[m.key].historico_saldo || [];
+                const deposito = data[m.key].deposito_inicial || 1;
+                // Converter para % de lucro
+                const valores = hist.map(h => ((h.saldo - deposito) / deposito * 100));
+                datasets.push({
+                    label: m.label,
+                    data: valores,
+                    borderColor: m.color,
+                    backgroundColor: 'transparent',
+                    tension: 0.3,
+                    pointRadius: 0,
+                    borderWidth: 2,
+                });
+            });
+
+            if (unifiedChart) {
+                unifiedChart.data.labels = allLabels;
+                unifiedChart.data.datasets = datasets;
+                unifiedChart.update('none');
+            } else {
+                unifiedChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: allLabels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + '%';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { display: false },
+                            y: {
+                                display: true,
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                ticks: {
+                                    color: '#666',
+                                    font: { size: 10 },
+                                    callback: function(value) {
+                                        return value.toFixed(1) + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Atualizar legenda
+            document.getElementById('chart-legend').innerHTML = machines.map(m =>
+                `<div class="legend-item">
+                    <span class="legend-dot" style="background: ${m.color};"></span>
+                    <span>${m.label}</span>
+                </div>`
+            ).join('');
         }
 
         function renderMachine(id, data) {
             const lucroSessao = data.saldo - data.deposito_inicial;
+            const lucroNs9 = data.lucro_ns9 || 0;
             const lucroAcumuladoAnterior = data.lucro_acumulado_anterior || 0;
-            const lucroTotal = lucroSessao + lucroAcumuladoAnterior;
+            const lucroTotal = lucroSessao + lucroAcumuladoAnterior + lucroNs9;
             const lucroPct = data.deposito_inicial > 0 ? (lucroSessao / data.deposito_inicial * 100) : 0;
+            const lucroTotalPct = data.deposito_inicial > 0 ? (lucroTotal / data.deposito_inicial * 100) : 0;
             const winRate = (data.sessoes_win + data.sessoes_loss) > 0
                 ? (data.sessoes_win / (data.sessoes_win + data.sessoes_loss) * 100) : 0;
 
+            // Barra de progresso para qualquer maquina em NS9
             let progressHtml = '';
-            if (id === 'agressiva' && data.nivel === 9) {
+            const modo = (data.modo || '').toLowerCase();
+            if (modo.includes('ns9') || data.nivel === 9) {
                 const progresso = Math.min(100, (lucroPct / data.lucro_para_subir) * 100);
                 progressHtml = `
                     <div class="progress-section">
                         <div class="progress-label">
-                            <span>Migração NS9 → NS10</span>
-                            <span>${lucroPct.toFixed(1)}% / ${data.lucro_para_subir}%</span>
+                            <span>Meta NS9 → NS10</span>
+                            <span style="color: #ff6b6b; font-weight: 600;">${lucroPct.toFixed(2)}% / ${data.lucro_para_subir}%</span>
                         </div>
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${progresso}%; background: linear-gradient(90deg, ${data.color}, #00e676);"></div>
+                            <div class="progress-fill" style="width: ${progresso}%; background: linear-gradient(90deg, #ff6b6b, #00e676);"></div>
                         </div>
                     </div>
                 `;
             }
 
-            let gatilhosHtml = '';
+            // Ultimos 10 ciclos com horario e tentativa
+            let ciclosHtml = '';
             if (data.ultimos_gatilhos && data.ultimos_gatilhos.length > 0) {
-                gatilhosHtml = `
-                    <div class="gatilhos-section">
-                        <div class="gatilhos-label">Últimos Gatilhos</div>
-                        <div class="gatilhos-list">
-                            ${data.ultimos_gatilhos.slice(-10).map(g =>
-                                `<span class="gatilho-badge gatilho-${g.resultado.toLowerCase()}">T${g.tentativa}</span>`
-                            ).join('')}
+                const ciclos = data.ultimos_gatilhos.slice(-10).reverse();
+                ciclosHtml = `
+                    <div class="ciclos-section">
+                        <div class="ciclos-label">Últimos 10 Ciclos</div>
+                        <div class="ciclos-list">
+                            ${ciclos.map(g => {
+                                const isWin = g.resultado === 'WIN';
+                                return `<div class="ciclo-item ciclo-${isWin ? 'win' : 'loss'}">
+                                    <span class="ciclo-time">${g.horario || '--:--'}</span>
+                                    <span>T${g.tentativa}</span>
+                                    <span class="ciclo-result ${isWin ? 'win' : 'loss'}">${isWin ? 'WIN' : 'LOSS'} ${g.mult ? g.mult.toFixed(2) + 'x' : ''}</span>
+                                </div>`;
+                            }).join('')}
                         </div>
                     </div>
                 `;
@@ -622,9 +737,7 @@ DASHBOARD_HTML = '''
                         <span class="status-badge status-${data.status}">${data.status}</span>
                     </div>
 
-                    <div class="chart-container">
-                        <canvas id="chart-${id}"></canvas>
-                    </div>
+                    ${progressHtml}
 
                     <div class="metrics-grid">
                         <div class="metric">
@@ -634,10 +747,12 @@ DASHBOARD_HTML = '''
                         <div class="metric">
                             <div class="metric-label">Lucro Sessão</div>
                             <div class="metric-value ${lucroSessao >= 0 ? 'positive' : 'negative'}">${formatMoney(lucroSessao)}</div>
+                            <div class="metric-subvalue">${formatPct(lucroPct)}</div>
                         </div>
                         <div class="metric">
                             <div class="metric-label">Lucro Total</div>
                             <div class="metric-value ${lucroTotal >= 0 ? 'positive' : 'negative'}" style="font-weight: bold;">${formatMoney(lucroTotal)}</div>
+                            <div class="metric-subvalue">${formatPct(lucroTotalPct)}</div>
                         </div>
                         <div class="metric">
                             <div class="metric-label">Nível</div>
@@ -651,31 +766,26 @@ DASHBOARD_HTML = '''
                             <div class="metric-label">Taxa</div>
                             <div class="metric-value">${winRate.toFixed(0)}%</div>
                         </div>
-                        <div class="metric">
-                            <div class="metric-label">Uptime</div>
-                            <div class="metric-value">${data.uptime || 'N/A'}</div>
-                        </div>
-                        <div class="metric">
-                            <div class="metric-label">Último Mult</div>
-                            <div class="metric-value">${data.last_mult ? data.last_mult.toFixed(2) + 'x' : 'N/A'}</div>
-                        </div>
                     </div>
 
-                    ${progressHtml}
-                    ${gatilhosHtml}
+                    ${ciclosHtml}
                 </div>
             `;
         }
 
         function renderTotals(data) {
+            const depositoTotal = data.agressiva.deposito_inicial + data.conservadora.deposito_inicial + data.isolada.deposito_inicial;
             const saldoTotal = data.agressiva.saldo + data.conservadora.saldo + data.isolada.saldo;
             const lucroSessao = (data.agressiva.saldo - data.agressiva.deposito_inicial) +
                                (data.conservadora.saldo - data.conservadora.deposito_inicial) +
                                (data.isolada.saldo - data.isolada.deposito_inicial);
+            const lucroNs9Total = (data.agressiva.lucro_ns9 || 0) + (data.conservadora.lucro_ns9 || 0) + (data.isolada.lucro_ns9 || 0);
             const lucroAcumulado = (data.agressiva.lucro_acumulado_anterior || 0) +
                                   (data.conservadora.lucro_acumulado_anterior || 0) +
                                   (data.isolada.lucro_acumulado_anterior || 0);
-            const lucroTotal = lucroSessao + lucroAcumulado;
+            const lucroTotal = lucroSessao + lucroAcumulado + lucroNs9Total;
+            const lucroPct = depositoTotal > 0 ? (lucroSessao / depositoTotal * 100) : 0;
+            const lucroTotalPct = depositoTotal > 0 ? (lucroTotal / depositoTotal * 100) : 0;
             const winsTotal = data.agressiva.sessoes_win + data.conservadora.sessoes_win + data.isolada.sessoes_win;
             const lossTotal = data.agressiva.sessoes_loss + data.conservadora.sessoes_loss + data.isolada.sessoes_loss;
             const winRate = (winsTotal + lossTotal) > 0 ? (winsTotal / (winsTotal + lossTotal) * 100) : 0;
@@ -690,10 +800,12 @@ DASHBOARD_HTML = '''
                     <div class="metric">
                         <div class="metric-label">Lucro Sessão</div>
                         <div class="metric-value ${lucroSessao >= 0 ? 'positive' : 'negative'}">${formatMoney(lucroSessao)}</div>
+                        <div class="metric-subvalue">${formatPct(lucroPct)}</div>
                     </div>
                     <div class="metric">
                         <div class="metric-label">Lucro Total</div>
                         <div class="metric-value ${lucroTotal >= 0 ? 'positive' : 'negative'}" style="font-weight: bold;">${formatMoney(lucroTotal)}</div>
+                        <div class="metric-subvalue">${formatPct(lucroTotalPct)}</div>
                     </div>
                     <div class="metric">
                         <div class="metric-label">Taxa Geral</div>
@@ -705,18 +817,50 @@ DASHBOARD_HTML = '''
                         <div class="metric-label">Wins / Losses</div>
                         <div class="metric-value">W:${winsTotal} L:${lossTotal}</div>
                     </div>
+                    <div class="metric">
+                        <div class="metric-label">Acum. Anterior</div>
+                        <div class="metric-value" style="color: #ffc107;">${formatMoney(lucroAcumulado)}</div>
+                    </div>
                 </div>
             `;
         }
 
         function renderDistribuicao(data) {
-            const saldoA = data.agressiva.saldo;
-            const saldoC = data.conservadora.saldo;
-            const total = saldoA + saldoC;
+            // Pegar saldos baseado no modo (agressiva = quem está em NS9)
+            let saldoAgressiva = 0;
+            let saldoConservadora = 0;
+            let nomeA = 'AGRESSIVA';
+            let nomeC = 'CONSERVADORA';
+
+            // Determinar qual máquina é qual baseado no modo
+            if ((data.agressiva.modo || '').toLowerCase().includes('ns9')) {
+                saldoAgressiva = data.agressiva.saldo;
+                nomeA = data.agressiva.name;
+            } else {
+                saldoConservadora = data.agressiva.saldo;
+                nomeC = data.agressiva.name;
+            }
+            if ((data.conservadora.modo || '').toLowerCase().includes('ns9')) {
+                saldoAgressiva = data.conservadora.saldo;
+                nomeA = data.conservadora.name;
+            } else {
+                saldoConservadora = data.conservadora.saldo;
+                nomeC = data.conservadora.name;
+            }
+
+            // Se nenhuma está em NS9, usar os nomes/saldos padrão
+            if (saldoAgressiva === 0 && saldoConservadora === 0) {
+                saldoAgressiva = data.agressiva.saldo;
+                saldoConservadora = data.conservadora.saldo;
+                nomeA = data.agressiva.name;
+                nomeC = data.conservadora.name;
+            }
+
+            const total = saldoAgressiva + saldoConservadora;
             const metade = total / 2;
 
-            const diffA = metade - saldoA;
-            const diffC = metade - saldoC;
+            const diffA = metade - saldoAgressiva;
+            const diffC = metade - saldoConservadora;
 
             const acaoA = diffA > 1 ? `depositar ${formatMoney(diffA)}` :
                          diffA < -1 ? `sacar ${formatMoney(Math.abs(diffA))}` : 'manter';
@@ -726,14 +870,14 @@ DASHBOARD_HTML = '''
             return `
                 <div class="section-title">💰 Distribuição Dual</div>
                 <div class="dist-row">
-                    <span>AGRESSIVA</span>
-                    <span style="color: var(--accent-1);">${formatMoney(saldoA)}</span>
+                    <span style="color: var(--accent-1);">${nomeA}</span>
+                    <span style="color: var(--accent-1);">${formatMoney(saldoAgressiva)}</span>
                 </div>
                 <div class="dist-row">
-                    <span>CONSERVADORA</span>
-                    <span style="color: var(--accent-2);">${formatMoney(saldoC)}</span>
+                    <span style="color: var(--accent-2);">${nomeC}</span>
+                    <span style="color: var(--accent-2);">${formatMoney(saldoConservadora)}</span>
                 </div>
-                <div class="dist-row" style="border-top: 2px solid var(--border); padding-top: 15px;">
+                <div class="dist-row" style="border-top: 2px solid var(--border); padding-top: 12px;">
                     <span><strong>TOTAL DUAL</strong></span>
                     <span><strong>${formatMoney(total)}</strong></span>
                 </div>
@@ -741,11 +885,11 @@ DASHBOARD_HTML = '''
                 <div class="dist-calc">
                     <div class="dist-calc-title">📊 Redistribuir 50/50</div>
                     <div class="dist-row">
-                        <span>AGRESSIVA → ${formatMoney(metade)}</span>
+                        <span>${nomeA} → ${formatMoney(metade)}</span>
                         <span class="dist-action">${acaoA}</span>
                     </div>
                     <div class="dist-row">
-                        <span>CONSERVADORA → ${formatMoney(metade)}</span>
+                        <span>${nomeC} → ${formatMoney(metade)}</span>
                         <span class="dist-action">${acaoC}</span>
                     </div>
                 </div>
@@ -757,18 +901,14 @@ DASHBOARD_HTML = '''
                 const response = await fetch('/api/status');
                 const data = await response.json();
 
+                // Render unified chart
+                createUnifiedChart(data);
+
                 // Render machines
                 document.getElementById('machines-grid').innerHTML =
                     renderMachine('agressiva', data.agressiva) +
                     renderMachine('conservadora', data.conservadora) +
                     renderMachine('isolada', data.isolada);
-
-                // Update charts
-                setTimeout(() => {
-                    createChart('chart-agressiva', data.agressiva.color, data.agressiva.historico_saldo || []);
-                    createChart('chart-conservadora', data.conservadora.color, data.conservadora.historico_saldo || []);
-                    createChart('chart-isolada', data.isolada.color, data.isolada.historico_saldo || []);
-                }, 100);
 
                 // Render totals and distribution
                 document.getElementById('totals-card').innerHTML = renderTotals(data);
@@ -818,9 +958,10 @@ def api_status():
             m['subtitle'] = display_info['subtitle']
             m['color'] = display_info['color']
 
-        # Adicionar lucro acumulado anterior do config
-        lucro_acumulado_anterior = DASHBOARD_CONFIG.get(key, {}).get('lucro_acumulado_anterior', 0) or 0
-        m['lucro_acumulado_anterior'] = lucro_acumulado_anterior
+        # Adicionar lucro acumulado anterior e lucro NS9 do config
+        config_machine = DASHBOARD_CONFIG.get(key, {})
+        m['lucro_acumulado_anterior'] = config_machine.get('lucro_acumulado_anterior', 0) or 0
+        m['lucro_ns9'] = config_machine.get('lucro_ns9', 0) or 0
 
         result[key] = m
 

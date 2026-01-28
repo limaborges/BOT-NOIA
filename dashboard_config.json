@@ -1,14 +1,17 @@
 {
   "agressiva": {
     "deposito_inicial_override": null,
-    "lucro_acumulado_anterior": 211.79
+    "lucro_acumulado_anterior": 211.79,
+    "lucro_ns9": 0
   },
   "conservadora": {
     "deposito_inicial_override": null,
-    "lucro_acumulado_anterior": 96.99
+    "lucro_acumulado_anterior": 96.99,
+    "lucro_ns9": 0
   },
   "isolada": {
     "deposito_inicial_override": null,
-    "lucro_acumulado_anterior": 0
+    "lucro_acumulado_anterior": 0,
+    "lucro_ns9": 0
   }
 }
