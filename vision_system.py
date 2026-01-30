@@ -28,6 +28,17 @@ except ImportError:
     EASYOCR_AVAILABLE = False
     print("EasyOCR não instalado. Usando apenas pytesseract.")
 
+# Carregar config da máquina para método OCR
+MACHINE_CONFIG = {}
+_machine_config_path = os.path.join(os.path.dirname(__file__), 'machine_config.json')
+if os.path.exists(_machine_config_path):
+    try:
+        with open(_machine_config_path, 'r') as f:
+            MACHINE_CONFIG = json.load(f)
+    except:
+        pass
+OCR_METHOD = MACHINE_CONFIG.get('ocr_method', 'scale2x')  # default: scale2x
+
 class VisionSystem:
     """Simple and reliable vision system for OCR detection"""
 
@@ -159,10 +170,15 @@ class VisionSystem:
         else:
             gray = img.copy()
 
-        # Resize 2x, contraste, OTSU (mesmo preprocessing do extrator)
-        gray = cv2.resize(gray, (gray.shape[1] * 2, gray.shape[0] * 2), interpolation=cv2.INTER_CUBIC)
-        gray = cv2.convertScaleAbs(gray, alpha=1.5, beta=0)
-        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        # Preprocessing baseado em OCR_METHOD (machine_config.json)
+        if OCR_METHOD == 'raw':
+            # Método RAW: apenas OTSU, sem resize nem contraste
+            _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        else:
+            # Método SCALE2X: resize 2x + contraste + OTSU (padrão)
+            gray = cv2.resize(gray, (gray.shape[1] * 2, gray.shape[0] * 2), interpolation=cv2.INTER_CUBIC)
+            gray = cv2.convertScaleAbs(gray, alpha=1.5, beta=0)
+            _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
         # Crop vertical (encontrar onde tem conteúdo)
         row_sums = np.sum(binary, axis=1)
