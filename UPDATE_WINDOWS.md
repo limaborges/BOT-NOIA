@@ -14,9 +14,11 @@
 
 ## Passos para Atualizar
 
-### 1. Parar o bot e sync_client
+### 1. Parar o sync_client
 
-Feche todas as janelas do bot e do sync_client.
+Feche apenas a janela do sync_client (Ctrl+C).
+
+**O bot NÃO precisa ser reiniciado.**
 
 ### 2. Atualizar código
 
@@ -44,11 +46,7 @@ Saída esperada:
 [HH:MM:SS] OK | Saldo: R$ XXXX.XX | Lucro: +X.XX% | Uptime: Xh Xmin
 ```
 
-### 4. Reiniciar o bot
-
-```bash
-python start_v2.py
-```
+**Pronto!** O bot pode continuar rodando normalmente.
 
 ---
 
