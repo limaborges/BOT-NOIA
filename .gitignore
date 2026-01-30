@@ -51,6 +51,7 @@ compartilhado/
 !INSTRUCOES_CLAUDE_WINDOWS.txt
 !CLAUDE_SETUP_CONSERVADORA.md
 !CLAUDE_SETUP_ISOLADA.md
+!UPDATE_WINDOWS.md
 *.png
 !templates_matching/*.png
 *.jpg

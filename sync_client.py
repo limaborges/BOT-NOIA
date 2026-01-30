@@ -75,6 +75,7 @@ def extract_data_from_state(state: dict) -> dict:
     """Extrai dados relevantes do session_state para enviar ao dashboard."""
 
     saldo = state.get("saldo_atual", 0)
+    deposito_inicial = state.get("deposito_inicial", 0)
     modo = state.get("config_modo", {}).get("modo", "g6_ns10")
 
     # Calcula aposta_base se não estiver no state
@@ -85,32 +86,63 @@ def extract_data_from_state(state: dict) -> dict:
     # Dados básicos
     data = {
         "saldo": saldo,
-        "deposito_inicial": state.get("deposito_inicial", 0),
+        "deposito_inicial": deposito_inicial,
         "aposta_base": aposta_base,
-        "nivel": state.get("nivel_atual", 10),
+        "nivel": state.get("nivel_seguranca", state.get("nivel_atual", 10)),
         "modo": modo,
         "lucro_para_subir": state.get("config_modo", {}).get("lucro_para_subir", 5.8),
         "total_rodadas": state.get("total_rodadas", 0),
         "sessoes_win": state.get("sessoes_win", 0),
         "sessoes_loss": state.get("sessoes_loss", 0),
-        "uptime_start": state.get("sessao_inicio"),
+        "uptime_start": state.get("inicio_timestamp", state.get("sessao_inicio")),
     }
 
+    # Construir histórico de saldo a partir de historico_apostas
+    historico_apostas = state.get("historico_apostas", [])
+    historico_saldo = []
+    saldo_acumulado = deposito_inicial
+
+    for aposta in historico_apostas:
+        resultado = aposta.get("resultado", 0)
+        saldo_acumulado += resultado
+        historico_saldo.append({
+            "horario": aposta.get("horario", ""),
+            "saldo": saldo_acumulado
+        })
+
+    # Se não tem historico_apostas, tentar usar historico_saldo direto
+    if not historico_saldo:
+        historico_saldo = state.get("historico_saldo", [])
+
+    data["historico_saldo"] = historico_saldo  # Enviar tudo, não só últimos 50
+
+    # Construir últimos gatilhos a partir de historico_apostas
+    ultimos_gatilhos = []
+    for aposta in historico_apostas[-20:]:  # Últimos 20
+        ultimos_gatilhos.append({
+            "horario": aposta.get("horario", ""),
+            "tentativa": aposta.get("tentativa", 1),
+            "resultado": "WIN" if aposta.get("ganhou", False) else "LOSS",
+            "mult": aposta.get("multiplicador_real", 0)
+        })
+
+    # Se não construiu, tentar usar ultimos_gatilhos direto
+    if not ultimos_gatilhos:
+        ultimos_gatilhos = state.get("ultimos_gatilhos", [])
+
+    data["ultimos_gatilhos"] = ultimos_gatilhos[-10:] if ultimos_gatilhos else []
+
     # Último multiplicador
-    ultimo_mult = state.get("ultimo_mult")
-    ultimo_mult_time = state.get("ultimo_mult_time")
-
-    if ultimo_mult:
-        data["last_mult"] = ultimo_mult
-        data["last_mult_time"] = ultimo_mult_time
-
-    # Histórico de saldo
-    historico = state.get("historico_saldo", [])
-    data["historico_saldo"] = historico[-50:] if historico else []
-
-    # Últimos gatilhos
-    gatilhos = state.get("ultimos_gatilhos", [])
-    data["ultimos_gatilhos"] = gatilhos[-10:] if gatilhos else []
+    if historico_apostas:
+        last = historico_apostas[-1]
+        data["last_mult"] = last.get("multiplicador_real")
+        data["last_mult_time"] = last.get("horario")
+    else:
+        ultimo_mult = state.get("ultimo_mult")
+        ultimo_mult_time = state.get("ultimo_mult_time")
+        if ultimo_mult:
+            data["last_mult"] = ultimo_mult
+            data["last_mult_time"] = ultimo_mult_time
 
     return data
 
