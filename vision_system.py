@@ -28,6 +28,17 @@ except ImportError:
     EASYOCR_AVAILABLE = False
     print("EasyOCR não instalado. Usando apenas pytesseract.")
 
+# Carregar config da máquina
+MACHINE_CONFIG = {}
+_mcfg_path = os.path.join(os.path.dirname(__file__), 'machine_config.json')
+if os.path.exists(_mcfg_path):
+    try:
+        with open(_mcfg_path, 'r') as f:
+            MACHINE_CONFIG = json.load(f)
+    except:
+        pass
+MULT_METHOD = MACHINE_CONFIG.get('mult_method', 'template')  # template ou tesseract
+
 class VisionSystem:
     """Simple and reliable vision system for OCR detection"""
 
@@ -491,16 +502,30 @@ class VisionSystem:
             return None
 
     def get_multiplier(self, region: Dict) -> Optional[float]:
-        """Multiplier detection - APENAS Template Matching (Método Gago)"""
+        """Multiplier detection - método configurável via machine_config.json"""
         try:
-            # Capture the region
             img = self.capture_region(region)
             if img is None:
                 return None
 
-            # TEMPLATE MATCHING APENAS - sem Tesseract
-            value = self.match_multiplier_with_templates(img)
-            return value
+            if MULT_METHOD == 'tesseract':
+                # TESSERACT RAW - grayscale puro, sem scale
+                if len(img.shape) == 4:
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
+                elif len(img.shape) == 3:
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                else:
+                    gray = img
+
+                text = pytesseract.image_to_string(gray, config='--psm 7 -c tessedit_char_whitelist=0123456789.x')
+                text = text.replace(',', '.').replace('x', '').replace('X', '').strip()
+                match = re.search(r'(\d+\.?\d*)', text)
+                if match:
+                    return float(match.group(1))
+                return None
+            else:
+                # TEMPLATE MATCHING (padrão)
+                return self.match_multiplier_with_templates(img)
 
         except Exception as e:
             self.logger.error(f"Erro na detecção de multiplicador: {e}")
