@@ -8,6 +8,7 @@
 2. **sync_client.py** - Corrigido para enviar histórico de saldo corretamente
 3. **Métricas por período** - Lucro das últimas 2h, 6h, 12h, 24h
 4. **Média diária** - Lucro médio por dia desde o início
+5. **Top 10 Sequências de Baixos** - Mostra as 10 maiores sequências de losses consecutivos por máquina
 
 ---
 
@@ -60,6 +61,7 @@ Confirme que:
 - [x] Cada máquina mostra lucro por período (2H, 6H, 12H, 24H)
 - [x] Cabeçalho mostra depósito inicial e aposta base
 - [x] Média diária aparece corretamente
+- [x] Seção "Top Sequências de Baixos" mostra os maiores losses consecutivos
 
 ---
 

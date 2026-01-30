@@ -40,9 +40,9 @@ MACHINE_TYPES = {
 
 # Histórico persistente
 historical_data = {
-    'agressiva': {'saldo_history': [], 'gatilhos_history': [], 'start_date': None, 'initial_deposit': 0, 'initial_bet': 0},
-    'conservadora': {'saldo_history': [], 'gatilhos_history': [], 'start_date': None, 'initial_deposit': 0, 'initial_bet': 0},
-    'isolada': {'saldo_history': [], 'gatilhos_history': [], 'start_date': None, 'initial_deposit': 0, 'initial_bet': 0},
+    'agressiva': {'saldo_history': [], 'gatilhos_history': [], 'low_sequences': [], 'start_date': None, 'initial_deposit': 0, 'initial_bet': 0},
+    'conservadora': {'saldo_history': [], 'gatilhos_history': [], 'low_sequences': [], 'start_date': None, 'initial_deposit': 0, 'initial_bet': 0},
+    'isolada': {'saldo_history': [], 'gatilhos_history': [], 'low_sequences': [], 'start_date': None, 'initial_deposit': 0, 'initial_bet': 0},
 }
 
 # Estado atual das máquinas
@@ -117,6 +117,11 @@ def update_historical_data(machine_id, data):
         if datetime.fromisoformat(h['timestamp']) > cutoff
     ]
 
+    # Atualizar sequências de baixos
+    gatilhos = data.get('ultimos_gatilhos', [])
+    if gatilhos:
+        update_low_sequences(machine_id, gatilhos)
+
     # Salvar periodicamente (a cada 5 minutos)
     save_history()
 
@@ -166,6 +171,70 @@ def get_daily_average(machine_id):
     media_pct = (lucro_total / deposito_inicial * 100 / days) if deposito_inicial > 0 else 0
 
     return media_diaria, media_pct
+
+
+def extract_low_sequences(gatilhos):
+    """Extrai sequências de baixos (losses consecutivos) dos gatilhos.
+    Uma sequência é identificada quando tentativa > 1, significando que
+    houve (tentativa - 1) losses antes do win."""
+    sequences = []
+
+    for g in gatilhos:
+        if g.get('resultado') == 'WIN' and g.get('tentativa', 1) > 1:
+            num_losses = g.get('tentativa', 1) - 1
+            sequences.append({
+                'losses': num_losses,
+                'horario': g.get('horario', ''),
+                'mult_final': g.get('mult', 0)
+            })
+
+    return sequences
+
+
+def update_low_sequences(machine_id, new_gatilhos):
+    """Atualiza lista de sequências de baixos mantendo top 20"""
+    hist = historical_data[machine_id]
+
+    # Extrair novas sequências
+    new_seqs = extract_low_sequences(new_gatilhos)
+
+    # Adicionar timestamp de hoje às novas sequências
+    today = datetime.now().strftime('%Y-%m-%d')
+    for seq in new_seqs:
+        seq['data'] = today
+        # Evitar duplicatas (mesmo horário)
+        exists = any(
+            s.get('horario') == seq['horario'] and s.get('data') == seq['data']
+            for s in hist['low_sequences']
+        )
+        if not exists:
+            hist['low_sequences'].append(seq)
+
+    # Ordenar por número de losses (maior primeiro) e manter top 50
+    hist['low_sequences'].sort(key=lambda x: x.get('losses', 0), reverse=True)
+    hist['low_sequences'] = hist['low_sequences'][:50]
+
+
+def get_top_low_sequences(machine_id, limit=10, hours=None):
+    """Retorna top N sequências de baixos, opcionalmente filtradas por período"""
+    hist = historical_data[machine_id]['low_sequences']
+
+    if hours:
+        cutoff = datetime.now() - timedelta(hours=hours)
+        filtered = []
+        for seq in hist:
+            try:
+                seq_date = seq.get('data', '')
+                seq_time = seq.get('horario', '')
+                if seq_date and seq_time:
+                    dt = datetime.strptime(f"{seq_date} {seq_time}", '%Y-%m-%d %H:%M:%S')
+                    if dt >= cutoff:
+                        filtered.append(seq)
+            except:
+                pass
+        return sorted(filtered, key=lambda x: x.get('losses', 0), reverse=True)[:limit]
+
+    return hist[:limit]
 
 
 def get_display_info(modo, machine_type):
@@ -467,6 +536,41 @@ DASHBOARD_HTML = '''
             font-size: 0.8em;
             margin-top: 15px;
         }
+
+        /* Sequências de Baixos */
+        .low-sequences-section {
+            background: var(--bg-card);
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid var(--border);
+        }
+        .low-seq-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        @media (max-width: 1000px) { .low-seq-grid { grid-template-columns: 1fr; } }
+        .low-seq-machine { }
+        .low-seq-title {
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border);
+        }
+        .low-seq-list { font-size: 0.75em; }
+        .low-seq-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .low-seq-losses {
+            font-weight: bold;
+            color: #ff5252;
+        }
+        .low-seq-time { color: var(--text-secondary); }
+        .low-seq-subtitle { color: var(--text-secondary); font-size: 0.8em; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -487,6 +591,11 @@ DASHBOARD_HTML = '''
         <div class="totals-section">
             <div class="totals-card" id="totals-card"></div>
             <div class="totals-card" id="stats-card"></div>
+        </div>
+
+        <div class="low-sequences-section">
+            <div class="section-title">Top Sequências de Baixos (Losses Consecutivos)</div>
+            <div class="low-seq-grid" id="low-seq-grid"></div>
         </div>
 
         <footer class="footer">
@@ -729,6 +838,44 @@ DASHBOARD_HTML = '''
             `;
         }
 
+        function renderLowSequencesMachine(name, color, seqs, seqs24h) {
+            if (!seqs || seqs.length === 0) {
+                return `
+                    <div class="low-seq-machine">
+                        <div class="low-seq-title" style="color:${color}">${name}</div>
+                        <div class="low-seq-list">Sem sequências registradas</div>
+                    </div>
+                `;
+            }
+
+            const topItems = seqs.slice(0, 10).map((s, i) => `
+                <div class="low-seq-item">
+                    <span>${i+1}. <span class="low-seq-losses">${s.losses}L</span></span>
+                    <span class="low-seq-time">${s.data || ''} ${s.horario || ''}</span>
+                </div>
+            `).join('');
+
+            let top24h = '';
+            if (seqs24h && seqs24h.length > 0) {
+                const max24h = seqs24h[0];
+                top24h = `<div class="low-seq-subtitle">24h: Maior = ${max24h.losses}L às ${max24h.horario || ''}</div>`;
+            }
+
+            return `
+                <div class="low-seq-machine">
+                    <div class="low-seq-title" style="color:${color}">${name} - Top 10</div>
+                    <div class="low-seq-list">${topItems}</div>
+                    ${top24h}
+                </div>
+            `;
+        }
+
+        function renderLowSequences(data) {
+            return renderLowSequencesMachine(data.agressiva.name, data.agressiva.color, data.agressiva.top_low_sequences, data.agressiva.top_low_24h) +
+                   renderLowSequencesMachine(data.conservadora.name, data.conservadora.color, data.conservadora.top_low_sequences, data.conservadora.top_low_24h) +
+                   renderLowSequencesMachine('ISOLADA', '#a66cff', data.isolada.top_low_sequences, data.isolada.top_low_24h);
+        }
+
         async function updateDashboard() {
             try {
                 const response = await fetch('/api/status');
@@ -743,6 +890,7 @@ DASHBOARD_HTML = '''
 
                 document.getElementById('totals-card').innerHTML = renderTotals(data);
                 document.getElementById('stats-card').innerHTML = renderStats(data);
+                document.getElementById('low-seq-grid').innerHTML = renderLowSequences(data);
                 document.getElementById('update-time').textContent = new Date().toLocaleTimeString('pt-BR');
 
             } catch (error) {
@@ -807,6 +955,10 @@ def api_status():
         daily_avg, daily_pct = get_daily_average(key)
         m['daily_avg'] = daily_avg
         m['daily_avg_pct'] = daily_pct
+
+        # Top sequências de baixos
+        m['top_low_sequences'] = get_top_low_sequences(key, 10)
+        m['top_low_24h'] = get_top_low_sequences(key, 5, hours=24)
 
         result[key] = m
 
